@@ -12,11 +12,12 @@ O projeto tem como objetivo implementar os fluxos de descoberta, compra e gerenc
 - TypeScript
 - Vite
 - TanStack Router com rotas baseadas em arquivos
+- Tailwind CSS 4
 - ESLint
 
 ## Stack prevista pelo desafio
 
-As próximas etapas integrarão TanStack Query, Axios, Socket.IO, Tailwind CSS, shadcn/ui, MSW, Playwright e auditorias com Lighthouse.
+As próximas etapas integrarão TanStack Query, Axios, Socket.IO, shadcn/ui, MSW, Playwright e auditorias com Lighthouse.
 
 ## Requisitos
 
