@@ -1,75 +1,91 @@
-# React + TypeScript + Vite
+# Jungle NFT Marketplace
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Marketplace de NFTs desenvolvido como solução para o [desafio frontend da Jungle](https://github.com/junglegaming/frontend-challenge).
 
-Currently, two official plugins are available:
+O projeto tem como objetivo implementar os fluxos de descoberta, compra e gerenciamento da conta de um colecionador, com dados simulados, suporte a desktop e mobile e atenção a acessibilidade, performance e qualidade das interações.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+> Status: em desenvolvimento. A fundação da aplicação e o roteamento estão configurados; os fluxos de produto serão adicionados incrementalmente.
 
-## React Compiler
+## Tecnologias configuradas
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19
+- TypeScript
+- Vite
+- TanStack Router com rotas baseadas em arquivos
+- ESLint
 
-## Expanding the ESLint configuration
+## Stack prevista pelo desafio
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+As próximas etapas integrarão TanStack Query, Axios, Socket.IO, Tailwind CSS, shadcn/ui, MSW, Playwright e auditorias com Lighthouse.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Requisitos
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- Node.js 24
+- npm 12
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Essas são as versões usadas no ambiente de desenvolvimento atual.
 
+## Instalação
+
+```bash
+git clone https://github.com/guamorim/Desafio-Tecnico-Jungle-Gaming.git
+cd Desafio-Tecnico-Jungle-Gaming
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+## Execução local
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Inicie o servidor de desenvolvimento:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run dev
 ```
+
+O Vite exibirá no terminal o endereço local da aplicação.
+
+## Comandos disponíveis
+
+| Comando | Descrição |
+| --- | --- |
+| `npm run dev` | Inicia o servidor de desenvolvimento com atualização automática. |
+| `npm run build` | Verifica os tipos e gera o bundle de produção em `dist`. |
+| `npm run lint` | Executa a análise estática do código. |
+| `npm run preview` | Serve localmente o bundle gerado pelo build. |
+
+## Estrutura atual
+
+```text
+src/
+├── assets/              # Imagens e outros recursos estáticos
+├── routes/
+│   ├── __root.tsx       # Layout raiz compartilhado pelas rotas
+│   └── index.tsx        # Página inicial (/)
+├── index.css            # Estilos globais
+├── main.tsx             # Inicialização do React e do router
+└── routeTree.gen.ts     # Árvore de rotas gerada pelo TanStack Router
+```
+
+O arquivo `src/routeTree.gen.ts` é gerado automaticamente e não deve ser editado manualmente.
+
+## Variáveis de ambiente
+
+Nenhuma variável de ambiente é necessária no estágio atual.
+
+As configurações dos mocks e dos cenários de rede serão documentadas aqui quando a camada de integração for implementada.
+
+## Dados simulados
+
+Autenticação, APIs, carteiras, pagamentos e eventos em tempo real serão simulados. O projeto não realizará transações reais nem dependerá de blockchain, extensões de carteira ou gateways de pagamento.
+
+As credenciais fictícias, os cenários de falha e o procedimento de reset serão adicionados quando os mocks com MSW estiverem disponíveis.
+
+## Qualidade
+
+A base atual é validada com:
+
+```bash
+npm run lint
+npm run build
+```
+
+Os testes E2E, a regressão visual e os resultados do Lighthouse serão documentados durante as próximas etapas da implementação.
