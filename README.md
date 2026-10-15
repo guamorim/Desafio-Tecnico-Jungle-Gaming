@@ -56,7 +56,6 @@ O Vite exibirá no terminal o endereço local da aplicação.
 
 ```text
 src/
-├── assets/              # Imagens e outros recursos estáticos
 ├── routes/
 │   ├── __root.tsx       # Layout raiz compartilhado pelas rotas
 │   └── index.tsx        # Página inicial (/)
