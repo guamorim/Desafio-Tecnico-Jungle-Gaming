@@ -9,15 +9,18 @@ O projeto tem como objetivo implementar os fluxos de descoberta, compra e gerenc
 ## Tecnologias configuradas
 
 - React 19
-- TypeScript
-- Vite
+- TypeScript 6
+- Vite 8
 - TanStack Router com rotas baseadas em arquivos
 - Tailwind CSS 4
+- shadcn/ui com Base UI
+- Lucide React
+- Geist Variable
 - ESLint
 
 ## Stack prevista pelo desafio
 
-As próximas etapas integrarão TanStack Query, Axios, Socket.IO, shadcn/ui, MSW, Playwright e auditorias com Lighthouse.
+As próximas etapas integrarão TanStack Query, Axios, Socket.IO, MSW, Playwright e auditorias com Lighthouse.
 
 ## Requisitos
 
@@ -56,16 +59,25 @@ O Vite exibirá no terminal o endereço local da aplicação.
 ## Estrutura atual
 
 ```text
-src/
-├── routes/
-│   ├── __root.tsx       # Layout raiz compartilhado pelas rotas
-│   └── index.tsx        # Página inicial (/)
-├── index.css            # Estilos globais
-├── main.tsx             # Inicialização do React e do router
-└── routeTree.gen.ts     # Árvore de rotas gerada pelo TanStack Router
+.
+├── src/
+│   ├── components/
+│   │   └── ui/
+│   │       └── button.tsx    # Botão gerado pelo shadcn/ui
+│   ├── lib/
+│   │   └── utils.ts          # Utilitários compartilhados
+│   ├── routes/
+│   │   ├── __root.tsx        # Layout raiz compartilhado
+│   │   └── index.tsx         # Página inicial (/)
+│   ├── index.css             # Tailwind e tokens do tema
+│   ├── main.tsx              # Inicialização do React e router
+│   └── routeTree.gen.ts      # Árvore gerada pelo TanStack Router
+└── components.json            # Configuração do shadcn/ui
 ```
 
 O arquivo `src/routeTree.gen.ts` é gerado automaticamente e não deve ser editado manualmente.
+
+Os componentes em `src/components/ui` são adicionados pelo CLI do shadcn/ui, passam a fazer parte do código-fonte do projeto e podem ser adaptados à identidade visual do marketplace.
 
 ## Variáveis de ambiente
 
