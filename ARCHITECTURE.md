@@ -250,6 +250,8 @@ Tailwind CSS é usado diretamente nos componentes. O breakpoint `md` separa as p
 - mobile: busca destacada, filtros em drawer, navegação inferior da homepage e detalhe em card compacto.
 - perfil: menu lateral e formulário em duas colunas no desktop; cabeçalho compacto e formulário em uma coluna no mobile.
 
+As telas de perfil e carteiras possuem referências desktop no Figma, mas não possuem layouts mobile fornecidos. A versão mobile do perfil foi projetada pelo autor do projeto. A adaptação mobile de carteiras também será uma solução autoral, derivada da hierarquia, dos campos e do sistema visual apresentados no desktop. A documentação distingue essas adaptações das reproduções diretas das telas de referência.
+
 Quando a estrutura muda significativamente, são usados componentes separados, como os cabeçalhos. Quando muda apenas a disposição, o mesmo componente recebe classes responsivas.
 
 Os componentes do shadcn/ui são mantidos dentro do projeto e podem ser adaptados sem depender de um pacote visual em tempo de execução.

@@ -343,6 +343,7 @@ Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite 
 
 ## Decisões atuais
 
+- O Figma fornece referências desktop para perfil e carteiras, mas não define essas telas no mobile. O perfil mobile foi projetado pelo autor do projeto; a adaptação mobile de carteiras seguirá a mesma abordagem autoral, preservando o sistema visual das referências fornecidas.
 - As imagens são locais e otimizadas em WebP.
 - Os 12 NFTs do catálogo possuem artes próprias em WebP.
 - Os 12 NFTs possuem descrição, atributos e avaliação próprios.
