@@ -6,7 +6,7 @@ A aplicação simula a descoberta e a compra de NFTs com dados determinísticos,
 
 As principais decisões técnicas e os pontos de extensão estão documentados em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-> Status: em desenvolvimento. Homepage, detalhes dos NFTs, carrinho, autenticação, perfil privado e favoritos estão funcionais e responsivos. Checkout, carteiras e tempo real fazem parte das próximas etapas.
+> Status: em desenvolvimento. Homepage, detalhes dos NFTs, carrinho, autenticação, perfil privado, avatar, favoritos e cadastro de carteiras estão funcionais e responsivos. Checkout, conexão de carteira e tempo real fazem parte das próximas etapas.
 
 ## Funcionalidades implementadas
 
@@ -83,6 +83,7 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - Rota privada e tipada `/profile` com estado de acesso bloqueado para visitantes.
 - Edição de nome, username, e-mail, ENS e apelido da carteira.
 - Alteração opcional de senha mediante confirmação da senha atual.
+- Upload, persistência e remoção de avatar em PNG, JPEG ou WebP, com limite de 1 MB.
 - Validação de unicidade de e-mail e username na API simulada.
 - Migração automática de contas armazenadas antes da evolução do modelo.
 - Logout global com limpeza do token e do cache da sessão.
@@ -97,6 +98,18 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - Cache separado pela identidade do visualizador, sem vazamento durante troca de contas.
 - Atualização otimista com restauração do snapshot quando a API falha.
 - Estado vazio, acesso bloqueado para visitantes e erro recuperável.
+
+### Carteiras
+
+- Rota privada e tipada `/wallets`.
+- Cadastro e edição de uma carteira principal e uma secundária por usuário.
+- Campos de apelido, rede, endereço, provedor, nome do perfil, ENS, e-mail e indicação.
+- Validação de endereços Ethereum, Polygon e Solana na API simulada.
+- Tratamento de endereço duplicado e demais erros por campo.
+- Persistência no `localStorage` e isolamento entre contas.
+- Cache remoto separado por usuário e removido em logout, troca de conta ou expiração.
+- Reprodução da referência desktop e layout mobile autoral, com navegação própria da conta e formulários em cartões, pois o Figma não fornece essa tela em viewport móvel.
+- Estado de conexão preparado no domínio; conectar, recusar e desconectar serão integrados ao checkout.
 
 ## Tecnologias
 
@@ -179,17 +192,23 @@ src/
 │   ├── auth/
 │   │   ├── api/                 # Login, cadastro, sessão e perfil
 │   │   ├── components/          # Modal, formulários e perfil responsivo
-│   │   ├── mutations/           # Login, cadastro, perfil e logout
+│   │   ├── mutations/           # Login, cadastro, perfil, avatar e logout
 │   │   ├── queries/             # Query global da sessão
 │   │   ├── auth-provider.tsx    # Sessão e modal disponíveis em todas as rotas
 │   │   └── types.ts
-│   └── nfts/
-│       ├── api/                 # Catálogo, detalhes e favoritos
-│       ├── components/          # Filtros, cards, galeria e detalhes
-│       ├── mutations/           # Favorito otimista e rollback
-│       ├── queries/             # Query options do TanStack Query
-│       ├── catalog-filters.ts
-│       ├── catalog-search.ts
+│   ├── nfts/
+│   │   ├── api/                 # Catálogo, detalhes e favoritos
+│   │   ├── components/          # Filtros, cards, galeria e detalhes
+│   │   ├── mutations/           # Favorito otimista e rollback
+│   │   ├── queries/             # Query options do TanStack Query
+│   │   ├── catalog-filters.ts
+│   │   ├── catalog-search.ts
+│   │   └── types.ts
+│   └── wallets/
+│       ├── api/                 # Consulta, criação e edição de carteiras
+│       ├── components/          # Formulários responsivos
+│       ├── mutations/           # Persistência e atualização do cache
+│       ├── queries/             # Query isolada por usuário
 │       └── types.ts
 ├── lib/
 │   ├── http-client.ts           # Instância compartilhada do Axios
@@ -200,7 +219,8 @@ src/
 │   ├── browser.ts
 │   ├── enable-mocking.ts
 │   ├── auth-handlers.ts         # Endpoints de autenticação e perfil
-│   ├── handlers.ts              # Endpoints de NFTs e carrinho
+│   ├── wallet-handlers.ts       # Endpoints protegidos de carteiras
+│   ├── handlers.ts              # Composição dos handlers REST
 │   └── mock-database.ts         # Banco mockado persistente
 └── routes/
     ├── __root.tsx               # Layout raiz e rodapé
@@ -208,7 +228,8 @@ src/
     ├── favorites.tsx            # Lista de interesse privada
     ├── index.tsx                # Homepage
     ├── nfts/$nftId.tsx          # Detalhes de um NFT
-    └── profile.tsx              # Perfil privado
+    ├── profile.tsx              # Perfil privado
+    └── wallets.tsx              # Carteiras privadas
 ```
 
 O arquivo `src/routeTree.gen.ts` é gerado automaticamente pelo TanStack Router e não deve ser editado manualmente.
@@ -253,6 +274,11 @@ POST /api/auth/login
 GET  /api/auth/session
 POST /api/auth/logout
 PATCH /api/auth/profile
+PATCH /api/auth/profile/avatar
+DELETE /api/auth/profile/avatar
+GET  /api/wallets
+POST /api/wallets
+PATCH /api/wallets/:walletId
 ```
 
 Cupons determinísticos disponíveis para validação manual:
@@ -267,7 +293,7 @@ As rotas do carrinho usam o header `X-Cart-Owner-Id`. Para visitantes anônimos,
 
 Ao autenticar, a API mescla os itens e o cupom do visitante no carrinho da conta, respeita os limites vigentes e esvazia o carrinho anônimo somente depois da transferência. Ao trocar de conta, a aplicação troca também a query do carrinho. Logout e expiração retornam à identidade anônima; autenticar novamente a mesma conta recupera seu carrinho persistido sem expor os itens de outro usuário.
 
-As rotas privadas usam `Authorization: Bearer <token>`. O interceptor do Axios anexa o token automaticamente. Favoritos são derivados exclusivamente da sessão autenticada e persistidos por `userId`; o cliente não escolhe a conta que será alterada. Usuários e sessões são persistidos somente no navegador para fins de demonstração; limpar os dados do site restaura as fixtures.
+As rotas privadas usam `Authorization: Bearer <token>`. O interceptor do Axios anexa o token automaticamente. Favoritos e carteiras são derivados exclusivamente da sessão autenticada e persistidos por `userId`; o cliente não escolhe a conta que será alterada. Usuários, sessões, avatares e carteiras são persistidos somente no navegador para fins de demonstração; limpar os dados do site restaura as fixtures.
 
 Contas determinísticas disponíveis para teste:
 
@@ -326,6 +352,7 @@ Com o servidor executando em `http://localhost:5173`:
 | `/nfts/nft-inexistente` | Estado de NFT não encontrado. |
 | `/cart` | Carrinho persistente, edição de itens e resumo financeiro. |
 | `/profile` | Perfil privado; solicita login quando não há sessão. |
+| `/wallets` | Cadastro e edição das carteiras principal e secundária. |
 
 Para validar autenticação, crie também uma conta nova. Ela permanecerá disponível após recarregar a página no mesmo navegador. Alterar a senha no perfil exige a senha atual e o logout permite validar o novo acesso.
 
@@ -343,7 +370,7 @@ Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite 
 
 ## Decisões atuais
 
-- O Figma fornece referências desktop para perfil e carteiras, mas não define essas telas no mobile. O perfil mobile foi projetado pelo autor do projeto; a adaptação mobile de carteiras seguirá a mesma abordagem autoral, preservando o sistema visual das referências fornecidas.
+- O Figma fornece referências desktop para perfil e carteiras, mas não define essas telas no mobile. As versões mobile foram projetadas pelo autor do projeto, preservando a hierarquia e o sistema visual das referências fornecidas.
 - As imagens são locais e otimizadas em WebP.
 - Os 12 NFTs do catálogo possuem artes próprias em WebP.
 - Os 12 NFTs possuem descrição, atributos e avaliação próprios.
@@ -351,14 +378,15 @@ Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite 
 - Somente o Aurora Ape possui uma imagem diferente para cada edição.
 - Botões editoriais sem fluxo previsto no desafio permanecem apenas apresentacionais.
 - Contas, sessões e alterações de perfil são locais e não representam autenticação de produção.
-- Upload de avatar, login social e recuperação de senha permanecem indisponíveis nesta etapa.
+- Login social e recuperação de senha permanecem indisponíveis nesta etapa.
+- Avatares são armazenados como Data URL no banco mockado local e limitados a 1 MB para respeitar a capacidade do `localStorage`.
+- O cadastro de carteiras está funcional; conexão, recusa e desconexão serão implementadas junto ao checkout.
 - O projeto não realiza transações reais nem depende de blockchain, extensão de carteira ou gateway de pagamento.
 
 ## Próximas etapas
 
 - Checkout, pagamento simulado e confirmação.
-- Gerenciamento e conexão mockada de carteiras.
-- Upload e remoção de avatar.
+- Conexão, recusa e desconexão mockadas de carteiras.
 - Atualizações de estoque com Socket.IO.
 - Cenários adicionais de falha e regressão visual com Playwright.
 - Auditoria e documentação do Lighthouse.
@@ -374,7 +402,7 @@ npm run build
 npm run test:e2e
 ```
 
-A suíte atual possui 30 cenários executados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 60 execuções. Ela cobre:
+A suíte possui 36 cenários executados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 72 execuções. Ela cobre:
 
 - carregamento e navegação responsiva da homepage;
 - pesquisa, filtros combinados, ordenação, abas, paginação, histórico e estado vazio do catálogo;
@@ -384,6 +412,8 @@ A suíte atual possui 30 cenários executados nos projetos Chromium desktop (`14
 - favoritos autenticados, persistência, isolamento entre contas e rollback otimista;
 - bloqueio de rota privada, login, cadastro, duplicidade, persistência de sessão e logout;
 - edição do perfil, rejeição da senha atual incorreta e troca de senha com novo login.
+- upload, persistência, validação e remoção de avatar;
+- acesso privado, criação, edição, persistência, validação e isolamento de carteiras.
 
 O Playwright gera o build de produção e inicia o preview com MSW antes dos testes. Falhas preservam screenshot e trace; resultados e relatórios HTML permanecem como artefatos locais e não são versionados.
 

@@ -36,6 +36,7 @@ import {
   saveMockFavorites,
 } from "./mock-database";
 import { findMockCoupon } from "./fixtures/coupons";
+import { walletHandlers } from "./wallet-handlers";
 
 const pageSize = 9;
 const newReleaseCutoff = Date.parse(
@@ -497,6 +498,7 @@ function createCartResponse(
 
 export const handlers = [
   ...authHandlers,
+  ...walletHandlers,
   http.get("/api/nfts", async ({ request }) => {
     const url = new URL(request.url);
     const page = parsePage(

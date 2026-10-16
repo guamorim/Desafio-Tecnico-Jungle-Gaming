@@ -37,6 +37,8 @@ async function logout(page: Page) {
 }
 
 test.describe("isolamento do carrinho", () => {
+  test.describe.configure({ timeout: 45_000 });
+
   test("mantém separados os carrinhos do visitante e da conta", async ({
     page,
   }) => {

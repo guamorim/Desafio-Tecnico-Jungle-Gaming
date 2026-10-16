@@ -8,6 +8,7 @@ import type {
   LoginInput,
   RegisterInput,
   SessionResponse,
+  UpdateAvatarInput,
   UpdateProfileInput,
 } from "@/features/auth/types";
 import {
@@ -127,6 +128,45 @@ function isUpdateProfileInput(
         typeof field === "string",
     )
   );
+}
+
+function isUpdateAvatarInput(
+  value: unknown,
+): value is UpdateAvatarInput {
+  if (
+    typeof value !== "object" ||
+    value === null
+  ) {
+    return false;
+  }
+
+  const input = value as Record<string, unknown>;
+
+  return typeof input.avatarDataUrl === "string";
+}
+
+function validateAvatarDataUrl(value: string) {
+  const match = value.match(
+    /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/,
+  );
+
+  if (!match) {
+    return "Envie uma imagem PNG, JPEG ou WebP válida.";
+  }
+
+  const encodedContent = match[2] ?? "";
+  const padding = encodedContent.endsWith("==")
+    ? 2
+    : encodedContent.endsWith("=")
+      ? 1
+      : 0;
+  const byteLength =
+    Math.floor((encodedContent.length * 3) / 4) -
+    padding;
+
+  return byteLength <= 1_000_000
+    ? null
+    : "O avatar deve ter no máximo 1 MB.";
 }
 
 function normalizeUsername(value: string) {
@@ -668,6 +708,96 @@ export const authHandlers = [
           input.walletNickname.trim(),
         passwordSalt,
         passwordHash,
+        version: authenticated.user.version + 1,
+      } satisfies MockUserRecord;
+
+      saveMockUser(nextUser);
+
+      return HttpResponse.json({
+        session: {
+          token,
+          expiresAt:
+            authenticated.storedSession.expiresAt,
+          user: toAuthUser(nextUser),
+        },
+      } satisfies SessionResponse);
+    },
+  ),
+  http.patch(
+    "/api/auth/profile/avatar",
+    async ({ request }) => {
+      await delay(450);
+
+      const token = readBearerToken(request);
+      const authenticated = token
+        ? findAuthenticatedUser(token)
+        : null;
+
+      if (!token || !authenticated) {
+        return HttpResponse.json(
+          { message: "Autenticação necessária." },
+          { status: 401 },
+        );
+      }
+
+      const input = await readRequestBody(request);
+
+      if (!isUpdateAvatarInput(input)) {
+        return HttpResponse.json(
+          { message: "Avatar inválido." },
+          { status: 400 },
+        );
+      }
+
+      const validationError = validateAvatarDataUrl(
+        input.avatarDataUrl,
+      );
+
+      if (validationError) {
+        return HttpResponse.json(
+          { message: validationError },
+          { status: 422 },
+        );
+      }
+
+      const nextUser = {
+        ...authenticated.user,
+        avatarUrl: input.avatarDataUrl,
+        version: authenticated.user.version + 1,
+      } satisfies MockUserRecord;
+
+      saveMockUser(nextUser);
+
+      return HttpResponse.json({
+        session: {
+          token,
+          expiresAt:
+            authenticated.storedSession.expiresAt,
+          user: toAuthUser(nextUser),
+        },
+      } satisfies SessionResponse);
+    },
+  ),
+  http.delete(
+    "/api/auth/profile/avatar",
+    async ({ request }) => {
+      await delay(350);
+
+      const token = readBearerToken(request);
+      const authenticated = token
+        ? findAuthenticatedUser(token)
+        : null;
+
+      if (!token || !authenticated) {
+        return HttpResponse.json(
+          { message: "Autenticação necessária." },
+          { status: 401 },
+        );
+      }
+
+      const nextUser = {
+        ...authenticated.user,
+        avatarUrl: null,
         version: authenticated.user.version + 1,
       } satisfies MockUserRecord;
 

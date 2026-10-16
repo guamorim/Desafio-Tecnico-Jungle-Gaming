@@ -6,6 +6,7 @@ import type {
   LoginInput,
   RegisterInput,
   SessionResponse,
+  UpdateAvatarInput,
   UpdateProfileInput,
 } from "../types";
 
@@ -63,6 +64,27 @@ export async function updateProfile(
     await httpClient.patch<SessionResponse>(
       "/auth/profile",
       input,
+    );
+
+  return data;
+}
+
+export async function updateAvatar(
+  input: UpdateAvatarInput,
+): Promise<SessionResponse> {
+  const { data } =
+    await httpClient.patch<SessionResponse>(
+      "/auth/profile/avatar",
+      input,
+    );
+
+  return data;
+}
+
+export async function removeAvatar(): Promise<SessionResponse> {
+  const { data } =
+    await httpClient.delete<SessionResponse>(
+      "/auth/profile/avatar",
     );
 
   return data;

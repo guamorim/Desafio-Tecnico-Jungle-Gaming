@@ -45,7 +45,8 @@ src/
 ├── features/        # Domínios da aplicação
 │   ├── nfts/
 │   ├── cart/
-│   └── auth/
+│   ├── auth/
+│   └── wallets/
 ├── lib/             # Infraestrutura compartilhada
 ├── mocks/           # API REST simulada e dados determinísticos
 └── routes/          # Páginas e integração com o TanStack Router
@@ -82,7 +83,7 @@ features/cart/
 └── types.ts
 ```
 
-Essa separação permite evoluir `checkout` e `wallets` sem concentrar toda a aplicação em pastas genéricas de componentes e serviços. A feature `auth` já reúne contratos, sessão, formulários, API e perfil.
+Essa separação permite evoluir o `checkout` sem concentrar toda a aplicação em pastas genéricas de componentes e serviços. A feature `auth` reúne contratos, sessão, formulários, API, perfil e avatar; `wallets` reúne contratos, consulta, persistência e formulários das carteiras.
 
 ### `routes`
 
@@ -96,6 +97,7 @@ Rotas atuais:
 /favorites           # Lista de interesse privada
 /nfts/$nftId         # Detalhes de um NFT
 /profile             # Perfil privado do colecionador
+/wallets             # Carteiras principal e secundária
 ```
 
 O arquivo `routeTree.gen.ts` é gerado automaticamente pelo plugin do TanStack Router.
@@ -107,7 +109,7 @@ O estado foi dividido de acordo com sua origem e duração.
 | Tipo | Responsabilidade | Implementação |
 | --- | --- | --- |
 | Estado da URL | Busca, filtros, abas, ordenação e página | TanStack Router |
-| Estado remoto | Catálogo, detalhes, favoritos, carrinho, sessão e perfil | TanStack Query |
+| Estado remoto | Catálogo, detalhes, favoritos, carrinho, sessão, perfil e carteiras | TanStack Query |
 | Estado local | Drawer, modal, aba visual, edição e quantidade | React |
 | Estado persistente do navegador | Identificador anônimo, carrinhos, token e banco mockado | `localStorage` |
 
@@ -145,7 +147,8 @@ O TanStack Query controla:
 - mutations para aplicar e remover cupom promocional;
 - query global de sessão;
 - mutations de login, cadastro, perfil e logout;
-- atualização do cache do carrinho após mutations.
+- mutations de avatar e carteiras;
+- atualização do cache do carrinho após mutations;
 - atualização otimista dos favoritos com rollback do cache.
 
 O `AbortSignal` recebido pelas query functions é encaminhado ao Axios.
@@ -175,6 +178,11 @@ POST /api/auth/login
 GET  /api/auth/session
 POST /api/auth/logout
 PATCH /api/auth/profile
+PATCH /api/auth/profile/avatar
+DELETE /api/auth/profile/avatar
+GET  /api/wallets
+POST /api/wallets
+PATCH /api/wallets/:walletId
 ```
 
 Os tipos das respostas ficam nas respectivas features. O MSW implementa os mesmos contratos esperados pelo cliente.
@@ -189,6 +197,7 @@ O banco mockado contém:
 nfts
 carts por ownerId
 favorites por userId
+wallets por userId
 users
 sessions por token
 ```
@@ -218,6 +227,10 @@ O token do cliente é armazenado separadamente e anexado pelo interceptor do Axi
 O `AuthProvider` agenda uma revalidação para o instante indicado por `expiresAt`. Se o MSW rejeitar a sessão expirada, o token é removido, a identidade do carrinho volta ao visitante e as rotas privadas reagem ao cache anônimo. Um novo login com a mesma conta recupera seu carrinho por meio do `userId` estável.
 
 O carregamento do banco normaliza usuários persistidos por versões anteriores, preenchendo username, ENS e apelido da carteira sem invalidar contas já criadas.
+
+Avatares são enviados como Data URL para a API simulada, validados novamente no MSW e limitados a PNG, JPEG ou WebP de até 1 MB. A escolha evita uma dependência externa de armazenamento durante a demonstração; em produção, o arquivo seria enviado para um serviço próprio e o perfil armazenaria somente sua URL.
+
+Carteiras são persistidas separadamente por `userId`. Os handlers derivam o proprietário do Bearer token, permitem uma carteira principal e uma secundária, validam rede e formato do endereço e rejeitam endereços duplicados. A query key inclui o usuário atual e seu cache é removido em logout, troca de conta ou expiração. O estado de conexão já faz parte do contrato, mas suas transições serão implementadas junto ao checkout.
 
 Cada resposta do carrinho inclui itens enriquecidos, cupom aplicado, quantidade total, subtotal, desconto, taxa de rede e total. A interface não recalcula a cotação: ela apresenta os valores confirmados pela API simulada. Valores em ETH permanecem como strings na fronteira HTTP e são convertidos em unidades inteiras com `BigInt` durante os cálculos, evitando imprecisão de ponto flutuante.
 
@@ -249,8 +262,9 @@ Tailwind CSS é usado diretamente nos componentes. O breakpoint `md` separa as p
 - desktop: navegação completa, sidebar de filtros e miniaturas verticais;
 - mobile: busca destacada, filtros em drawer, navegação inferior da homepage e detalhe em card compacto.
 - perfil: menu lateral e formulário em duas colunas no desktop; cabeçalho compacto e formulário em uma coluna no mobile.
+- carteiras: menu lateral e formulário em duas colunas no desktop; cabeçalho compacto e campos em uma coluna no mobile.
 
-As telas de perfil e carteiras possuem referências desktop no Figma, mas não possuem layouts mobile fornecidos. A versão mobile do perfil foi projetada pelo autor do projeto. A adaptação mobile de carteiras também será uma solução autoral, derivada da hierarquia, dos campos e do sistema visual apresentados no desktop. A documentação distingue essas adaptações das reproduções diretas das telas de referência.
+As telas de perfil e carteiras possuem referências desktop no Figma, mas não possuem layouts mobile fornecidos. As duas versões mobile foram projetadas pelo autor do projeto a partir da hierarquia, dos campos e do sistema visual apresentados no desktop. A documentação distingue essas adaptações das reproduções diretas das telas de referência.
 
 Quando a estrutura muda significativamente, são usados componentes separados, como os cabeçalhos. Quando muda apenas a disposição, o mesmo componente recebe classes responsivas.
 
@@ -278,8 +292,8 @@ Controles interativos possuem rótulos acessíveis, foco visível e elementos se
 - Todos possuem quatro edições comerciais, mas somente o Aurora Ape possui quatro imagens diferentes.
 - Botões sem fluxo definido pelo desafio permanecem apresentacionais.
 - O carrinho possui rota responsiva, persistência e operações completas; o botão de finalização permanece bloqueado até a implementação do checkout.
-- Login, cadastro, sessão, logout e perfil são funcionais; login social, recuperação de senha e avatar permanecem explicitamente indisponíveis.
-- Blockchain, carteiras e pagamento são simulados; nenhuma transação real será executada.
+- Login, cadastro, sessão, logout, perfil e avatar são funcionais; login social e recuperação de senha permanecem explicitamente indisponíveis.
+- Cadastro e edição de carteiras são funcionais e simulados; conexão, blockchain e pagamento serão simulados e nenhuma transação real será executada.
 
 Esses trade-offs priorizam fluxos verificáveis e arquitetura extensível dentro do prazo de 48 horas.
 
@@ -303,7 +317,22 @@ Formulário
   → headers e rotas privadas reagem imediatamente
 ```
 
-A rota `/profile` bloqueia os dados para visitantes e oferece o modal de login como recuperação. Alterações de e-mail e username repetem validação de unicidade no handler; troca de senha exige a senha atual e gera novo salt e hash.
+A rota `/profile` bloqueia os dados para visitantes e oferece o modal de login como recuperação. Alterações de e-mail e username repetem validação de unicidade no handler; troca de senha exige a senha atual e gera novo salt e hash. O avatar usa endpoints próprios para que sua mutation e seus estados de erro não interfiram no restante do formulário.
+
+### Carteiras
+
+A rota `/wallets` é privada e consulta uma coleção vinculada à identidade da sessão. Criação e edição usam o mesmo formulário, mas endpoints REST diferentes. O MSW continua sendo a autoridade para cardinalidade, formato do endereço, duplicidade e propriedade do registro.
+
+```text
+Formulário de carteira
+  → mutation de criação ou edição
+  → Axios com Bearer token
+  → MSW deriva o usuário e valida o domínio
+  → persistência por userId
+  → resposta substitui a query ["wallets", userId]
+```
+
+A referência desktop foi reproduzida com menu lateral e duas colunas. Como o Figma não inclui uma versão mobile, essa composição é autoral: uma navegação compacta conecta perfil, carteiras e favoritos, enquanto cada carteira ocupa um cartão com campos em uma coluna. O fluxo de conexão será acrescentado no checkout, onde também serão tratados recusa, desconexão e escolha da rede.
 
 ### Tempo real
 
@@ -318,7 +347,7 @@ Socket.IO
 
 ### Testes e qualidade
 
-Playwright está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. A suíte possui 30 cenários e produz 60 execuções ao validar os dois projetos.
+Playwright está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. A suíte possui 36 cenários e produz 72 execuções ao validar os dois projetos.
 
 ```text
 home.spec.ts          → carregamento e navegação responsiva
@@ -329,6 +358,7 @@ cart-isolation.spec.ts → visitante, troca de contas, expiração e retomada
 auth.spec.ts          → acesso privado, login, cadastro, sessão e logout
 profile.spec.ts       → dados pessoais e alteração de senha
 favorites.spec.ts     → autenticação, persistência, isolamento e rollback
+avatar-wallets.spec.ts → avatar, carteiras, validação e isolamento
 ```
 
 Os testes observam a interface e os contratos acessíveis, restringindo seletores ao domínio relevante da página. Isso evita que conteúdo editorial visualmente semelhante seja confundido com resultados do catálogo. Helpers são compartilhados apenas quando representam uma operação de negócio completa, como autenticar uma conta ou adicionar uma edição ao carrinho.

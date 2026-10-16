@@ -13,10 +13,13 @@ import { synchronizeCartCache } from "@/features/cart/cart-cache";
 import { getGuestOwnerId } from "@/features/cart/guest-owner";
 import { cartQueryKey } from "@/features/cart/queries/cart-query";
 import { nftViewerQueryKey } from "@/features/nfts/queries/nft-query-keys";
+import { walletsQueryKey } from "@/features/wallets/queries/wallets-query";
 import {
   login,
   logout,
+  removeAvatar,
   register,
+  updateAvatar,
   updateProfile,
 } from "../api/auth-api";
 import { sessionQueryKey } from "../queries/session-query";
@@ -55,6 +58,10 @@ function removePrivateUserCache(
   removeUserCartCache(queryClient, userId);
   queryClient.removeQueries({
     queryKey: nftViewerQueryKey(userId),
+  });
+  queryClient.removeQueries({
+    queryKey: walletsQueryKey(userId),
+    exact: true,
   });
 }
 
@@ -133,6 +140,28 @@ export function updateProfileMutationOptions(
 ) {
   return mutationOptions({
     mutationFn: updateProfile,
+    onSuccess: (response) => {
+      setSession(queryClient, response);
+    },
+  });
+}
+
+export function updateAvatarMutationOptions(
+  queryClient: QueryClient,
+) {
+  return mutationOptions({
+    mutationFn: updateAvatar,
+    onSuccess: (response) => {
+      setSession(queryClient, response);
+    },
+  });
+}
+
+export function removeAvatarMutationOptions(
+  queryClient: QueryClient,
+) {
+  return mutationOptions({
+    mutationFn: removeAvatar,
     onSuccess: (response) => {
       setSession(queryClient, response);
     },

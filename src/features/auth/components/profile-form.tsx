@@ -1,13 +1,22 @@
 import {
+  useRef,
   useState,
   type FormEvent,
 } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, EyeOff, UserRound } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  UserRound,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { getAuthErrorResponse } from "../auth-error";
-import { updateProfileMutationOptions } from "../mutations/auth-mutations";
+import {
+  removeAvatarMutationOptions,
+  updateAvatarMutationOptions,
+  updateProfileMutationOptions,
+} from "../mutations/auth-mutations";
 import type {
   AuthFieldErrors,
   AuthUser,
@@ -88,6 +97,13 @@ export function ProfileForm({
   const updateMutation = useMutation(
     updateProfileMutationOptions(queryClient),
   );
+  const updateAvatarMutation = useMutation(
+    updateAvatarMutationOptions(queryClient),
+  );
+  const removeAvatarMutation = useMutation(
+    removeAvatarMutationOptions(queryClient),
+  );
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [displayName, setDisplayName] = useState(
     user.displayName,
   );
@@ -110,11 +126,76 @@ export function ProfileForm({
     useState(false);
   const [showSuccess, setShowSuccess] =
     useState(false);
+  const [avatarMessage, setAvatarMessage] =
+    useState("");
+  const [avatarClientError, setAvatarClientError] =
+    useState("");
   const errorResponse = getAuthErrorResponse(
     updateMutation.error,
   );
   const fieldErrors: AuthFieldErrors | undefined =
     errorResponse?.fieldErrors;
+  const avatarMutationError = getAuthErrorResponse(
+    updateAvatarMutation.error ??
+      removeAvatarMutation.error,
+  );
+
+  function handleAvatarFile(file: File | undefined) {
+    setAvatarMessage("");
+    setAvatarClientError("");
+    updateAvatarMutation.reset();
+    removeAvatarMutation.reset();
+
+    if (!file) {
+      return;
+    }
+
+    if (
+      !["image/png", "image/jpeg", "image/webp"].includes(
+        file.type,
+      )
+    ) {
+      setAvatarClientError(
+        "Envie uma imagem PNG, JPEG ou WebP.",
+      );
+      return;
+    }
+
+    if (file.size > 1_000_000) {
+      setAvatarClientError(
+        "O avatar deve ter no máximo 1 MB.",
+      );
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onerror = () => {
+      setAvatarClientError(
+        "Não foi possível ler a imagem selecionada.",
+      );
+    };
+    reader.onload = () => {
+      if (typeof reader.result !== "string") {
+        setAvatarClientError(
+          "Não foi possível ler a imagem selecionada.",
+        );
+        return;
+      }
+
+      updateAvatarMutation.mutate(
+        { avatarDataUrl: reader.result },
+        {
+          onSuccess: () => {
+            setAvatarMessage(
+              "Avatar atualizado com sucesso.",
+            );
+          },
+        },
+      );
+    };
+    reader.readAsDataURL(file);
+  }
 
   function handleSubmit(
     event: FormEvent<HTMLFormElement>,
@@ -168,6 +249,9 @@ export function ProfileForm({
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
+  const isAvatarPending =
+    updateAvatarMutation.isPending ||
+    removeAvatarMutation.isPending;
 
   return (
     <section aria-labelledby="profile-title">
@@ -253,7 +337,7 @@ export function ProfileForm({
                   {user.avatarUrl ? (
                     <img
                       src={user.avatarUrl}
-                      alt=""
+                      alt={`Avatar de ${user.displayName}`}
                       className="size-full object-cover"
                     />
                   ) : initials ? (
@@ -265,20 +349,72 @@ export function ProfileForm({
                 <Button
                   type="button"
                   size="sm"
-                  disabled
-                  title="Upload de avatar no próximo passo"
+                  disabled={isAvatarPending}
+                  onClick={() => {
+                    avatarInputRef.current?.click();
+                  }}
                 >
-                  Alterar
+                  {updateAvatarMutation.isPending
+                    ? "Enviando..."
+                    : "Alterar avatar"}
                 </Button>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="sr-only"
+                  aria-label="Selecionar imagem do avatar"
+                  onChange={(event) => {
+                    handleAvatarFile(
+                      event.currentTarget.files?.[0],
+                    );
+                    event.currentTarget.value = "";
+                  }}
+                />
                 <button
                   type="button"
-                  disabled
-                  title="Remoção de avatar no próximo passo"
-                  className="text-xs text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={
+                    !user.avatarUrl || isAvatarPending
+                  }
+                  className="text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={() => {
+                    setAvatarMessage("");
+                    setAvatarClientError("");
+                    updateAvatarMutation.reset();
+                    removeAvatarMutation.mutate(undefined, {
+                      onSuccess: () => {
+                        setAvatarMessage(
+                          "Avatar removido com sucesso.",
+                        );
+                      },
+                    });
+                  }}
                 >
-                  Remover
+                  {removeAvatarMutation.isPending
+                    ? "Removendo..."
+                    : "Remover avatar"}
                 </button>
               </div>
+
+              {(avatarClientError ||
+                avatarMutationError) && (
+                <p
+                  role="alert"
+                  className="text-xs text-destructive"
+                >
+                  {avatarClientError ||
+                    avatarMutationError?.message}
+                </p>
+              )}
+
+              {avatarMessage && (
+                <p
+                  role="status"
+                  className="text-xs text-primary"
+                >
+                  {avatarMessage}
+                </p>
+              )}
             </div>
           </div>
         </fieldset>

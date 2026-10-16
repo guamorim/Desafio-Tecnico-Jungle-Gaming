@@ -3,10 +3,14 @@ import { LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type ProfileAccessRequiredProps = {
+  readonly description?: string;
+  readonly title?: string;
   readonly onLogin: () => void;
 };
 
 export function ProfileAccessRequired({
+  description = "Seus dados pessoais e configurações são privados.",
+  title = "Entre para acessar seu perfil",
   onLogin,
 }: ProfileAccessRequiredProps) {
   return (
@@ -17,10 +21,10 @@ export function ProfileAccessRequired({
         </span>
         <div className="space-y-2">
           <h1 className="text-2xl font-bold">
-            Entre para acessar seu perfil
+            {title}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Seus dados pessoais e configurações são privados.
+            {description}
           </p>
         </div>
         <Button

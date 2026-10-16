@@ -38,6 +38,10 @@ export type UpdateProfileInput = {
   readonly newPasswordConfirmation?: string;
 };
 
+export type UpdateAvatarInput = {
+  readonly avatarDataUrl: string;
+};
+
 type AuthFieldName =
   | keyof RegisterInput
   | keyof UpdateProfileInput;

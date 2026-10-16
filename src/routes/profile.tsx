@@ -14,6 +14,7 @@ import { PageContainer } from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
 import { ProfileAccessRequired } from "@/features/auth/components/profile-access-required";
 import { ProfileForm } from "@/features/auth/components/profile-form";
+import { ProfileMobileNavigation } from "@/features/auth/components/profile-mobile-navigation";
 import { ProfilePageSkeleton } from "@/features/auth/components/profile-page-skeleton";
 import { ProfileSidebar } from "@/features/auth/components/profile-sidebar";
 import { logoutMutationOptions } from "@/features/auth/mutations/auth-mutations";
@@ -64,11 +65,13 @@ function ProfilePage() {
     content = (
       <div className="grid gap-8 py-8 md:grid-cols-[13rem_minmax(0,1fr)] md:py-12">
         <ProfileSidebar
+          activeItem="profile"
           isLoggingOut={logoutMutation.isPending}
           onLogout={handleLogout}
         />
 
         <div className="min-w-0">
+          <ProfileMobileNavigation activeItem="profile" />
           <ProfileForm user={session.user} />
 
           <Button

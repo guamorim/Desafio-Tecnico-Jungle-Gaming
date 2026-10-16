@@ -1,5 +1,6 @@
 import type { Cart } from "@/features/cart/types";
 import type { NftDetail } from "@/features/nfts/types";
+import type { CollectorWallet } from "@/features/wallets/types";
 
 import type {
   MockSessionRecord,
@@ -12,6 +13,7 @@ type MockDatabase = {
   nfts: NftDetail[];
   carts: Record<string, Cart>;
   favorites: Record<string, string[]>;
+  wallets: Record<string, CollectorWallet[]>;
   users: MockUserRecord[];
   sessions: Record<string, MockSessionRecord>;
 };
@@ -27,6 +29,8 @@ const authStorageKey =
   "jungle-nft-marketplace:mock-auth:v1";
 const favoritesStorageKey =
   "jungle-nft-marketplace:mock-favorites:v1";
+const walletsStorageKey =
+  "jungle-nft-marketplace:mock-wallets:v1";
 
 function isRecord(
   value: unknown,
@@ -298,6 +302,75 @@ function readPersistedFavorites(): Record<string, string[]> {
   }
 }
 
+function isCollectorWallet(
+  value: unknown,
+): value is CollectorWallet {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.label === "string" &&
+    ["ethereum", "polygon", "solana"].includes(
+      String(value.network),
+    ) &&
+    typeof value.profileName === "string" &&
+    typeof value.address === "string" &&
+    typeof value.ensName === "string" &&
+    ["metamask", "walletconnect", "coinbase"].includes(
+      String(value.provider),
+    ) &&
+    typeof value.referralCode === "string" &&
+    typeof value.email === "string" &&
+    typeof value.isPrimary === "boolean" &&
+    ["connected", "disconnected"].includes(
+      String(value.connectionStatus),
+    ) &&
+    typeof value.version === "number" &&
+    Number.isInteger(value.version)
+  );
+}
+
+function readPersistedWallets(): Record<
+  string,
+  CollectorWallet[]
+> {
+  if (typeof localStorage === "undefined") {
+    return {};
+  }
+
+  try {
+    const serializedWallets = localStorage.getItem(
+      walletsStorageKey,
+    );
+
+    if (!serializedWallets) {
+      return {};
+    }
+
+    const parsedWallets: unknown = JSON.parse(
+      serializedWallets,
+    );
+
+    if (!isRecord(parsedWallets)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsedWallets).flatMap(
+        ([userId, wallets]) =>
+          Array.isArray(wallets) &&
+          wallets.every(isCollectorWallet)
+            ? [[userId, wallets]]
+            : [],
+      ),
+    );
+  } catch {
+    return {};
+  }
+}
+
 function persistCarts(carts: Record<string, Cart>) {
   if (typeof localStorage === "undefined") {
     return;
@@ -322,6 +395,19 @@ function persistFavorites(
   );
 }
 
+function persistWallets(
+  wallets: Record<string, CollectorWallet[]>,
+) {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(
+    walletsStorageKey,
+    JSON.stringify(wallets),
+  );
+}
+
 function persistAuth(
   authState: PersistedAuthState,
 ) {
@@ -342,6 +428,7 @@ function createInitialDatabase(): MockDatabase {
     nfts: nftDetailFixtures,
     carts: readPersistedCarts(),
     favorites: readPersistedFavorites(),
+    wallets: readPersistedWallets(),
     users: mergeUsers(persistedAuth.users),
     sessions: persistedAuth.sessions,
   });
@@ -378,6 +465,21 @@ export function saveMockFavorites(
   };
 
   persistFavorites(database.favorites);
+}
+
+export function saveMockWallets(
+  userId: string,
+  wallets: readonly CollectorWallet[],
+) {
+  database = {
+    ...database,
+    wallets: {
+      ...database.wallets,
+      [userId]: [...wallets],
+    },
+  };
+
+  persistWallets(database.wallets);
 }
 
 export function saveMockUser(user: MockUserRecord) {
@@ -438,6 +540,7 @@ export function resetMockDatabase() {
     localStorage.removeItem(cartsStorageKey);
     localStorage.removeItem(authStorageKey);
     localStorage.removeItem(favoritesStorageKey);
+    localStorage.removeItem(walletsStorageKey);
   }
 
   database = createInitialDatabase();

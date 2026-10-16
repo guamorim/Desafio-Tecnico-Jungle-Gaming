@@ -10,18 +10,19 @@ import {
 import { Link } from "@tanstack/react-router";
 
 type ProfileSidebarProps = {
+  readonly activeItem?: "profile" | "wallets";
   readonly isLoggingOut: boolean;
   readonly onLogout: () => void;
 };
 
 const disabledItems = [
-  { label: "Carteiras", icon: WalletCards },
   { label: "Ofertas", icon: Tag },
   { label: "Arquivos baixados", icon: Download },
   { label: "Suporte", icon: CircleHelp },
 ] as const;
 
 export function ProfileSidebar({
+  activeItem = "profile",
   isLoggingOut,
   onLogout,
 }: ProfileSidebarProps) {
@@ -34,16 +35,39 @@ export function ProfileSidebar({
       <nav aria-label="Navegação do perfil">
         <ul className="space-y-1 text-xs">
           <li>
-            <span
-              aria-current="page"
-              className="flex items-center gap-2 rounded-md bg-primary/10 px-3 py-2.5 font-bold text-primary"
+            <Link
+              to="/profile"
+              aria-current={
+                activeItem === "profile"
+                  ? "page"
+                  : undefined
+              }
+              className={`flex items-center gap-2 rounded-md px-3 py-2.5 outline-none hover:bg-primary/10 hover:text-primary focus-visible:ring-2 focus-visible:ring-ring ${activeItem === "profile" ? "bg-primary/10 font-bold text-primary" : "text-muted-foreground"}`}
             >
               <UserRound
                 className="size-4"
                 aria-hidden="true"
               />
               Dados do perfil
-            </span>
+            </Link>
+          </li>
+
+          <li>
+            <Link
+              to="/wallets"
+              aria-current={
+                activeItem === "wallets"
+                  ? "page"
+                  : undefined
+              }
+              className={`flex items-center gap-2 rounded-md px-3 py-2.5 outline-none hover:bg-primary/10 hover:text-primary focus-visible:ring-2 focus-visible:ring-ring ${activeItem === "wallets" ? "bg-primary/10 font-bold text-primary" : "text-muted-foreground"}`}
+            >
+              <WalletCards
+                className="size-4"
+                aria-hidden="true"
+              />
+              Carteiras
+            </Link>
           </li>
 
           <li>

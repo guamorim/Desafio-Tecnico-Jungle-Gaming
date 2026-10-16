@@ -13,6 +13,7 @@ import { AuthContext } from "./auth-context";
 import { createUserCartOwnerId } from "@/features/cart/cart-owner-id";
 import { cartQueryKey } from "@/features/cart/queries/cart-query";
 import { nftViewerQueryKey } from "@/features/nfts/queries/nft-query-keys";
+import { walletsQueryKey } from "@/features/wallets/queries/wallets-query";
 import {
   AuthDialog,
   type AuthMode,
@@ -57,6 +58,12 @@ export function AuthProvider({
         queryKey: nftViewerQueryKey(
           previousUserId.current,
         ),
+      });
+      queryClient.removeQueries({
+        queryKey: walletsQueryKey(
+          previousUserId.current,
+        ),
+        exact: true,
       });
     }
 
