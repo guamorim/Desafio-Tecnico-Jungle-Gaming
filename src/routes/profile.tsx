@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   useMutation,
   useQuery,
@@ -19,8 +18,8 @@ import { ProfilePageSkeleton } from "@/features/auth/components/profile-page-ske
 import { ProfileSidebar } from "@/features/auth/components/profile-sidebar";
 import { logoutMutationOptions } from "@/features/auth/mutations/auth-mutations";
 import { useAuth } from "@/features/auth/use-auth";
-import { getGuestOwnerId } from "@/features/cart/guest-owner";
 import { cartQueryOptions } from "@/features/cart/queries/cart-query";
+import { useCartOwnerId } from "@/features/cart/use-cart-owner-id";
 
 export const Route = createFileRoute("/profile")({
   component: ProfilePage,
@@ -34,7 +33,7 @@ function ProfilePage() {
     isSessionPending,
     openLogin,
   } = useAuth();
-  const [cartOwnerId] = useState(getGuestOwnerId);
+  const cartOwnerId = useCartOwnerId();
   const { data: cart } = useQuery(
     cartQueryOptions(cartOwnerId),
   );

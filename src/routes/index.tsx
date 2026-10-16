@@ -9,8 +9,8 @@ import { DesktopHomeHeader } from "@/components/layout/desktop-home-header";
 import { MobileBottomNavigation } from "@/components/layout/mobile-bottom-navigation";
 import { MobileHomeHeader } from "@/components/layout/mobile-home-header";
 import { Button } from "@/components/ui/button";
-import { getGuestOwnerId } from "@/features/cart/guest-owner";
 import { cartQueryOptions } from "@/features/cart/queries/cart-query";
+import { useCartOwnerId } from "@/features/cart/use-cart-owner-id";
 import { restoreMocking } from "@/mocks/enable-mocking";
 import type {
   NftCatalogSort,
@@ -39,7 +39,7 @@ function HomePage() {
   const catalogSearch = Route.useSearch();
   const navigate = Route.useNavigate();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [cartOwnerId] = useState(getGuestOwnerId);
+  const cartOwnerId = useCartOwnerId();
 
   const { data: cart } = useQuery(
     cartQueryOptions(cartOwnerId),

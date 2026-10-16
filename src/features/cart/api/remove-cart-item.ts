@@ -1,9 +1,9 @@
 import { httpClient } from "@/lib/http-client";
 
-import { getGuestOwnerId } from "../guest-owner";
 import type { CartResponse } from "../types";
 
 export async function removeCartItem(
+  ownerId: string,
   itemId: string,
 ): Promise<CartResponse> {
   const encodedItemId = encodeURIComponent(itemId);
@@ -11,7 +11,7 @@ export async function removeCartItem(
     `/cart/items/${encodedItemId}`,
     {
       headers: {
-        "X-Cart-Owner-Id": getGuestOwnerId(),
+        "X-Cart-Owner-Id": ownerId,
       },
     },
   );

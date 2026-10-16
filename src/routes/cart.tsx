@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Link,
@@ -13,8 +12,8 @@ import { CartEmptyState } from "@/features/cart/components/cart-empty-state";
 import { CartPageContent } from "@/features/cart/components/cart-page-content";
 import { CartPageSkeleton } from "@/features/cart/components/cart-page-skeleton";
 import { CartRecommendations } from "@/features/cart/components/cart-recommendations";
-import { getGuestOwnerId } from "@/features/cart/guest-owner";
 import { cartQueryOptions } from "@/features/cart/queries/cart-query";
+import { useCartOwnerId } from "@/features/cart/use-cart-owner-id";
 import { nftListQueryOptions } from "@/features/nfts/queries/nft-list-query";
 import { restoreMocking } from "@/mocks/enable-mocking";
 
@@ -23,7 +22,7 @@ export const Route = createFileRoute("/cart")({
 });
 
 function CartPage() {
-  const [cartOwnerId] = useState(getGuestOwnerId);
+  const cartOwnerId = useCartOwnerId();
   const {
     data: cart,
     isPending,

@@ -108,7 +108,7 @@ O estado foi dividido de acordo com sua origem e duração.
 | Estado da URL | Busca, filtros, abas, ordenação e página | TanStack Router |
 | Estado remoto | Catálogo, detalhes, carrinho, sessão e perfil | TanStack Query |
 | Estado local | Drawer, modal, aba visual, edição e quantidade | React |
-| Estado persistente do visitante | Identificador, carrinho, token e banco mockado | `localStorage` |
+| Estado persistente do navegador | Identificador anônimo, carrinhos, token e banco mockado | `localStorage` |
 
 ### Estado do catálogo na URL
 
@@ -186,13 +186,23 @@ users
 sessions por token
 ```
 
-O visitante recebe um identificador criado por `crypto.randomUUID()`. Esse identificador é enviado em `X-Cart-Owner-Id` e persistido no `localStorage`.
+O visitante recebe um identificador criado por `crypto.randomUUID()` e persistido no `localStorage`. Uma conta autenticada recebe a identidade determinística `user-${userId}`. A identidade atual é enviada em `X-Cart-Owner-Id` e também compõe a query key do carrinho.
+
+```text
+sessão pendente  → consulta do carrinho aguarda
+visitante        → guest-UUID
+conta autenticada → user-${userId}
+```
+
+As funções HTTP e mutations recebem o `ownerId` explicitamente. Assim, uma operação iniciada por uma conta mantém o mesmo proprietário mesmo que a sessão mude antes da resposta. Trocas de conta selecionam outra entrada de cache e outro carrinho persistido.
 
 O carrinho também é serializado no `localStorage`. A persistência existe apenas para sustentar a demonstração entre recarregamentos; uma API real assumiria essa responsabilidade em produção.
 
 Usuários e sessões seguem a mesma estratégia exclusivamente para permitir cadastro, login e perfil verificáveis sem backend. Senhas não são armazenadas em texto: o Web Crypto deriva hashes PBKDF2 com salt individual. Essa proteção aproxima o contrato de uma API real, mas `localStorage` e um Service Worker não constituem uma fronteira de segurança de produção.
 
-O token do cliente é armazenado separadamente e anexado pelo interceptor do Axios como `Authorization: Bearer <token>`. O `AuthProvider`, montado no layout raiz, consulta a sessão uma vez e compartilha usuário e abertura do modal entre homepage, detalhes, carrinho e perfil. Login, cadastro, atualização e logout substituem diretamente o cache da sessão para evitar estados divergentes.
+O token do cliente é armazenado separadamente e anexado pelo interceptor do Axios como `Authorization: Bearer <token>`. O `AuthProvider`, montado no layout raiz, consulta a sessão e compartilha usuário e abertura do modal entre homepage, detalhes, carrinho e perfil. Login, cadastro, atualização e logout substituem diretamente o cache da sessão para evitar estados divergentes.
+
+O `AuthProvider` agenda uma revalidação para o instante indicado por `expiresAt`. Se o MSW rejeitar a sessão expirada, o token é removido, a identidade do carrinho volta ao visitante e as rotas privadas reagem ao cache anônimo. Um novo login com a mesma conta recupera seu carrinho por meio do `userId` estável.
 
 O carregamento do banco normaliza usuários persistidos por versões anteriores, preenchendo username, ENS e apelido da carteira sem invalidar contas já criadas.
 
@@ -262,7 +272,7 @@ Esses trade-offs priorizam fluxos verificáveis e arquitetura extensível dentro
 
 ### Carrinho e checkout
 
-O carrinho usa a mesma chave de cache nos cabeçalhos, no painel de compra e na rota `/cart`. As mutations de itens e cupom substituem o cache pela resposta confirmada da API, mantendo quantidade, desconto e totais sincronizados. O checkout usará um identificador de idempotência para impedir confirmações duplicadas.
+O carrinho usa a mesma chave de cache, composta pelo proprietário atual, nos cabeçalhos, no painel de compra e na rota `/cart`. As mutations de itens e cupom preservam o proprietário com que foram iniciadas e substituem o cache pela resposta confirmada da API, mantendo quantidade, desconto e totais sincronizados. O checkout usará um identificador de idempotência para impedir confirmações duplicadas.
 
 ### Autenticação
 
@@ -293,13 +303,14 @@ Socket.IO
 
 ### Testes e qualidade
 
-Playwright está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. A suíte possui 23 cenários e produz 46 execuções ao validar os dois projetos.
+Playwright está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. A suíte possui 26 cenários e produz 52 execuções ao validar os dois projetos.
 
 ```text
 home.spec.ts          → carregamento e navegação responsiva
 catalog.spec.ts       → busca, filtros, ordenação, histórico e vazio
 nft-details.spec.ts   → edições, indisponibilidade e 404
 cart.spec.ts          → itens, quantidades, persistência, cupons e totais
+cart-isolation.spec.ts → visitante, troca de contas, expiração e retomada
 auth.spec.ts          → acesso privado, login, cadastro, sessão e logout
 profile.spec.ts       → dados pessoais e alteração de senha
 ```

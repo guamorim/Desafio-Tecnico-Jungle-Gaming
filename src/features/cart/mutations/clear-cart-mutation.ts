@@ -8,9 +8,10 @@ import { synchronizeCartCache } from "../cart-cache";
 
 export function clearCartMutationOptions(
   queryClient: QueryClient,
+  ownerId: string,
 ) {
   return mutationOptions({
-    mutationFn: clearCart,
+    mutationFn: () => clearCart(ownerId),
     onSuccess: (cart) => {
       synchronizeCartCache(queryClient, cart);
     },

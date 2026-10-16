@@ -8,9 +8,12 @@ import { synchronizeCartCache } from "../cart-cache";
 
 export function applyCartCouponMutationOptions(
   queryClient: QueryClient,
+  ownerId: string,
 ) {
   return mutationOptions({
-    mutationFn: applyCartCoupon,
+    mutationFn: (
+      input: Parameters<typeof applyCartCoupon>[1],
+    ) => applyCartCoupon(ownerId, input),
     onSuccess: (cart) => {
       synchronizeCartCache(queryClient, cart);
     },

@@ -9,6 +9,11 @@ export const fixtureAccount = {
   password: "Kurio#2026",
 } as const;
 
+export const secondFixtureAccount = {
+  email: "leo@kurio.test",
+  password: "Jungle#2026",
+} as const;
+
 export async function openLoginDialog(
   page: Page,
 ): Promise<Locator> {
@@ -63,13 +68,21 @@ export async function submitLogin(
 export async function loginWithFixture(
   page: Page,
 ) {
-  const dialog = await openLoginDialog(page);
-
-  await submitLogin(
-    dialog,
+  await loginWithAccount(
+    page,
     fixtureAccount.email,
     fixtureAccount.password,
   );
+}
+
+export async function loginWithAccount(
+  page: Page,
+  email: string,
+  password: string,
+) {
+  const dialog = await openLoginDialog(page);
+
+  await submitLogin(dialog, email, password);
 
   await expect(dialog).toBeHidden();
   await expect(

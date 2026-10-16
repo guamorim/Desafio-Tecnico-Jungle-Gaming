@@ -1,12 +1,11 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { isAxiosError } from "axios";
 
 import { DesktopDetailHeader } from "@/components/layout/desktop-detail-header";
 import { PageContainer } from "@/components/layout/page-container";
-import { getGuestOwnerId } from "@/features/cart/guest-owner";
 import { cartQueryOptions } from "@/features/cart/queries/cart-query";
+import { useCartOwnerId } from "@/features/cart/use-cart-owner-id";
 import { restoreMocking } from "@/mocks/enable-mocking";
 import { NftDetailContent } from "@/features/nfts/components/nft-detail-content";
 import { NftDetailError } from "@/features/nfts/components/nft-detail-error";
@@ -21,7 +20,7 @@ export const Route = createFileRoute(
 
 function NftDetailPage() {
   const { nftId } = Route.useParams();
-  const [cartOwnerId] = useState(getGuestOwnerId);
+  const cartOwnerId = useCartOwnerId();
   const { data: cart } = useQuery(
     cartQueryOptions(cartOwnerId),
   );

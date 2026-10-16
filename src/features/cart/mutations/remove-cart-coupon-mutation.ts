@@ -8,9 +8,10 @@ import { synchronizeCartCache } from "../cart-cache";
 
 export function removeCartCouponMutationOptions(
   queryClient: QueryClient,
+  ownerId: string,
 ) {
   return mutationOptions({
-    mutationFn: removeCartCoupon,
+    mutationFn: () => removeCartCoupon(ownerId),
     onSuccess: (cart) => {
       synchronizeCartCache(queryClient, cart);
     },

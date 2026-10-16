@@ -26,19 +26,34 @@ export function CartPageContent({
   const [couponCode, setCouponCode] = useState("");
   const queryClient = useQueryClient();
   const updateItemMutation = useMutation(
-    updateCartItemMutationOptions(queryClient),
+    updateCartItemMutationOptions(
+      queryClient,
+      cart.ownerId,
+    ),
   );
   const removeItemMutation = useMutation(
-    removeCartItemMutationOptions(queryClient),
+    removeCartItemMutationOptions(
+      queryClient,
+      cart.ownerId,
+    ),
   );
   const clearCartMutation = useMutation(
-    clearCartMutationOptions(queryClient),
+    clearCartMutationOptions(
+      queryClient,
+      cart.ownerId,
+    ),
   );
   const applyCouponMutation = useMutation(
-    applyCartCouponMutationOptions(queryClient),
+    applyCartCouponMutationOptions(
+      queryClient,
+      cart.ownerId,
+    ),
   );
   const removeCouponMutation = useMutation(
-    removeCartCouponMutationOptions(queryClient),
+    removeCartCouponMutationOptions(
+      queryClient,
+      cart.ownerId,
+    ),
   );
   const mutationError =
     updateItemMutation.error ??

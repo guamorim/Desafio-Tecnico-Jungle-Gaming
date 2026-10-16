@@ -1,12 +1,12 @@
 import { httpClient } from "@/lib/http-client";
 
-import { getGuestOwnerId } from "../guest-owner";
 import type {
   ApplyCartCouponInput,
   CartResponse,
 } from "../types";
 
 export async function applyCartCoupon(
+  ownerId: string,
   input: ApplyCartCouponInput,
 ): Promise<CartResponse> {
   const { data } = await httpClient.post<CartResponse>(
@@ -14,7 +14,7 @@ export async function applyCartCoupon(
     input,
     {
       headers: {
-        "X-Cart-Owner-Id": getGuestOwnerId(),
+        "X-Cart-Owner-Id": ownerId,
       },
     },
   );

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/button";
 import { getCartErrorMessage } from "@/features/cart/cart-error-message";
 import { addCartItemMutationOptions } from "@/features/cart/mutations/add-cart-item-mutation";
+import { useCartOwnerId } from "@/features/cart/use-cart-owner-id";
 import { cn } from "@/lib/utils";
 
 import type { NftEdition } from "../types";
@@ -39,8 +40,12 @@ export function NftEditionPurchasePanel({
   selectedEditionId,
 }: NftEditionPurchasePanelProps) {
   const queryClient = useQueryClient();
+  const cartOwnerId = useCartOwnerId();
   const addItemMutation = useMutation(
-    addCartItemMutationOptions(queryClient),
+    addCartItemMutationOptions(
+      queryClient,
+      cartOwnerId,
+    ),
   );
   const initialEdition =
     editions.find(
@@ -238,7 +243,10 @@ export function NftEditionPurchasePanel({
                 type="button"
                 size="lg"
                 className="w-full md:max-w-xs"
-                disabled={addItemMutation.isPending}
+                disabled={
+                  cartOwnerId === null ||
+                  addItemMutation.isPending
+                }
                 onClick={() => {
                   addItemMutation.mutate({
                     nftId,

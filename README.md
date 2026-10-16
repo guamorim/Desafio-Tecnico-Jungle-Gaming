@@ -51,6 +51,9 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 
 - Rota tipada e responsiva `/cart`.
 - Identidade estável para visitantes anônimos.
+- Identidade própria para cada conta autenticada.
+- Isolamento entre o carrinho do visitante e os carrinhos de usuários diferentes.
+- Retomada do carrinho da conta após expiração da sessão e novo login.
 - Consulta do carrinho com TanStack Query.
 - Inclusão de uma edição pelo painel de compra.
 - Alteração de quantidade, remoção individual e limpeza completa.
@@ -73,6 +76,8 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - Criação de novas contas com validação por campo e bloqueio de e-mail duplicado.
 - Hash de senha com PBKDF2 e salt individual usando Web Crypto.
 - Sessões mockadas com token, expiração e persistência no `localStorage`.
+- Revalidação automática da sessão no momento da expiração.
+- Retorno seguro à identidade anônima quando a sessão expira.
 - Header e navegação mobile sincronizados com a sessão em todas as rotas.
 - Rota privada e tipada `/profile` com estado de acesso bloqueado para visitantes.
 - Edição de nome, username, e-mail, ENS e apelido da carteira.
@@ -158,6 +163,7 @@ src/
 │   │   ├── mutations/           # Mutations do TanStack Query
 │   │   ├── queries/             # Query e chave do carrinho
 │   │   ├── guest-owner.ts       # Identidade persistida do visitante
+│   │   ├── use-cart-owner-id.ts # Identidade derivada da sessão atual
 │   │   └── types.ts
 │   ├── auth/
 │   │   ├── api/                 # Login, cadastro, sessão e perfil
@@ -240,7 +246,9 @@ Cupons determinísticos disponíveis para validação manual:
 | `GENESIS20` | Retorna erro de cupom expirado. |
 | Qualquer outro | Retorna erro de cupom inválido. |
 
-As rotas do carrinho usam o header `X-Cart-Owner-Id`. Para visitantes anônimos, o cliente cria um identificador com `crypto.randomUUID()` e o mantém no `localStorage`.
+As rotas do carrinho usam o header `X-Cart-Owner-Id`. Para visitantes anônimos, o cliente cria um identificador com `crypto.randomUUID()` e o mantém no `localStorage`. Contas autenticadas usam uma identidade determinística derivada do ID do usuário. Essa mesma identidade compõe a chave de cache do TanStack Query e é enviada explicitamente por cada mutation.
+
+Ao trocar de conta, a aplicação troca também a query do carrinho. Logout e expiração retornam ao carrinho anônimo original; autenticar novamente a mesma conta recupera seu carrinho persistido sem expor os itens de outro usuário.
 
 As rotas privadas usam `Authorization: Bearer <token>`. O interceptor do Axios anexa o token automaticamente. Usuários e sessões são persistidos somente no navegador para fins de demonstração; limpar os dados do site restaura as fixtures.
 
@@ -349,12 +357,13 @@ npm run build
 npm run test:e2e
 ```
 
-A suíte atual possui 23 cenários executados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 46 execuções. Ela cobre:
+A suíte atual possui 26 cenários executados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 52 execuções. Ela cobre:
 
 - carregamento e navegação responsiva da homepage;
 - pesquisa, filtros combinados, ordenação, abas, paginação, histórico e estado vazio do catálogo;
 - troca de edição, indisponibilidade e estado `404` nos detalhes;
 - inclusão, quantidade, persistência, remoção, cupons e totais do carrinho;
+- isolamento do carrinho entre visitante e contas, troca de usuário, expiração e retomada;
 - bloqueio de rota privada, login, cadastro, duplicidade, persistência de sessão e logout;
 - edição do perfil, rejeição da senha atual incorreta e troca de senha com novo login.
 
