@@ -1,0 +1,48 @@
+import type { NftSummary } from "@/features/nfts/types";
+
+export const nftFixtures = [
+  {
+    id: "nft-aurora-ape",
+    name: "Aurora Ape",
+    creatorName: "Maya K.",
+    collectionName: "Jungle Genesis",
+    imageUrl: "/images/nfts/aurora-ape.webp",
+    startingPriceEth: "0.125",
+    availableQuantity: 12,
+    isFavorite: false,
+    version: 1,
+  },
+  {
+    id: "nft-cyber-tiger",
+    name: "Cyber Tiger",
+    creatorName: "Leo N.",
+    collectionName: "Jungle Genesis",
+    imageUrl: "/images/nfts/cyber-tiger.webp",
+    startingPriceEth: "0.280",
+    availableQuantity: 7,
+    isFavorite: true,
+    version: 1,
+  },
+  {
+    id: "nft-ether-bloom",
+    name: "Ether Bloom",
+    creatorName: "Nina Vale",
+    collectionName: "Digital Flora",
+    imageUrl: "/images/nfts/ether-bloom.webp",
+    startingPriceEth: "0.095",
+    availableQuantity: 18,
+    isFavorite: false,
+    version: 1,
+  },
+  {
+    id: "nft-midnight-totem",
+    name: "Midnight Totem",
+    creatorName: "Ravi Stone",
+    collectionName: "Ancient Pixels",
+    imageUrl: "/images/nfts/midnight-totem.webp",
+    startingPriceEth: "0.410",
+    availableQuantity: 4,
+    isFavorite: false,
+    version: 1,
+  },
+] as const satisfies readonly NftSummary[];

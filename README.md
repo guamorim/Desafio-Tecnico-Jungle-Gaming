@@ -4,7 +4,7 @@ Marketplace de NFTs desenvolvido como solução para o [desafio frontend da Jung
 
 O projeto tem como objetivo implementar os fluxos de descoberta, compra e gerenciamento da conta de um colecionador, com dados simulados, suporte a desktop e mobile e atenção a acessibilidade, performance e qualidade das interações.
 
-> Status: em desenvolvimento. A fundação da aplicação e o roteamento estão configurados; os fluxos de produto serão adicionados incrementalmente.
+> Status: em desenvolvimento. A fundação da aplicação, o roteamento e o primeiro fluxo de dados do catálogo estão configurados com Axios, TanStack Query e MSW.
 
 ## Tecnologias configuradas
 
@@ -12,15 +12,19 @@ O projeto tem como objetivo implementar os fluxos de descoberta, compra e gerenc
 - TypeScript 6
 - Vite 8
 - TanStack Router com rotas baseadas em arquivos
+- TanStack Query para estado remoto e cache
+- TanStack Query Devtools no ambiente de desenvolvimento
+- Axios como cliente HTTP
+- MSW para simulação da API no navegador
 - Tailwind CSS 4
 - shadcn/ui com Base UI
 - Lucide React
 - Geist Variable
 - ESLint
 
-## Stack prevista pelo desafio
+## Stack restante do desafio
 
-As próximas etapas integrarão TanStack Query, Axios, Socket.IO, MSW, Playwright e auditorias com Lighthouse.
+As próximas etapas integrarão Socket.IO, Playwright e auditorias com Lighthouse.
 
 ## Requisitos
 
@@ -60,19 +64,36 @@ O Vite exibirá no terminal o endereço local da aplicação.
 
 ```text
 .
+├── public/
+│   └── mockServiceWorker.js       # Service Worker gerado pelo MSW
 ├── src/
 │   ├── components/
 │   │   └── ui/
-│   │       └── button.tsx    # Botão gerado pelo shadcn/ui
+│   │       └── button.tsx         # Botão gerado pelo shadcn/ui
+│   ├── features/
+│   │   └── nfts/
+│   │       ├── api/
+│   │       │   └── list-nfts.ts   # Requisição do catálogo
+│   │       ├── queries/
+│   │       │   └── nft-list-query.ts
+│   │       └── types.ts           # Contratos dos NFTs e paginação
 │   ├── lib/
-│   │   └── utils.ts          # Utilitários compartilhados
+│   │   ├── http-client.ts         # Instância compartilhada do Axios
+│   │   ├── query-client.ts        # Configuração do TanStack Query
+│   │   └── utils.ts
+│   ├── mocks/
+│   │   ├── fixtures/
+│   │   │   └── nfts.ts            # Dados determinísticos
+│   │   ├── browser.ts             # Worker usado pelo navegador
+│   │   ├── enable-mocking.ts      # Inicialização condicional
+│   │   └── handlers.ts            # Endpoints simulados
 │   ├── routes/
-│   │   ├── __root.tsx        # Layout raiz compartilhado
-│   │   └── index.tsx         # Página inicial (/)
-│   ├── index.css             # Tailwind e tokens do tema
-│   ├── main.tsx              # Inicialização do React e router
-│   └── routeTree.gen.ts      # Árvore gerada pelo TanStack Router
-└── components.json            # Configuração do shadcn/ui
+│   │   ├── __root.tsx
+│   │   └── index.tsx
+│   ├── index.css
+│   ├── main.tsx
+│   └── routeTree.gen.ts
+└── components.json
 ```
 
 O arquivo `src/routeTree.gen.ts` é gerado automaticamente e não deve ser editado manualmente.
@@ -81,15 +102,33 @@ Os componentes em `src/components/ui` são adicionados pelo CLI do shadcn/ui, pa
 
 ## Variáveis de ambiente
 
-Nenhuma variável de ambiente é necessária no estágio atual.
+Os mocks do MSW são habilitados por padrão para que o projeto funcione sem um backend externo.
 
-As configurações dos mocks e dos cenários de rede serão documentadas aqui quando a camada de integração for implementada.
+Para desabilitá-los, crie um arquivo `.env.local`:
+
+```env
+VITE_ENABLE_MOCKS=false
+```
+
+Somente o valor exato `false` desabilita os mocks. Variáveis expostas ao código do navegador pelo Vite precisam começar com `VITE_`.
 
 ## Dados simulados
 
-Autenticação, APIs, carteiras, pagamentos e eventos em tempo real serão simulados. O projeto não realizará transações reais nem dependerá de blockchain, extensões de carteira ou gateways de pagamento.
+O endpoint disponível atualmente é:
 
-As credenciais fictícias, os cenários de falha e o procedimento de reset serão adicionados quando os mocks com MSW estiverem disponíveis.
+```text
+GET /api/nfts
+```
+
+Ele devolve uma lista determinística de NFTs com metadados de paginação e uma latência simulada de 500 ms, permitindo observar o estado de carregamento da interface.
+
+O fluxo atual é:
+
+```text
+HomePage → TanStack Query → Axios → MSW → fixture
+```
+
+Autenticação, carteiras, pagamentos e eventos em tempo real ainda serão simulados. O projeto não realizará transações reais nem dependerá de blockchain, extensões de carteira ou gateways de pagamento.
 
 ## Qualidade
 
