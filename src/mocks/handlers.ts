@@ -8,6 +8,35 @@ import { nftFixtures } from "./fixtures/nfts";
 
 const pageSize = 9;
 
+type NftFilters = {
+  readonly categories: readonly string[];
+  readonly maximumPrice: number | undefined;
+  readonly minimumPrice: number | undefined;
+  readonly network: string | null;
+  readonly searchQuery: string;
+};
+
+function parseOptionalNumber(
+  value: string | null,
+) {
+  if (value === null || value.trim() === "") {
+    return undefined;
+  }
+
+  const parsedValue = Number(value);
+
+  return Number.isFinite(parsedValue)
+    ? parsedValue
+    : undefined;
+}
+
+function parseList(value: string | null) {
+  return value
+    ?.split(",")
+    .map((item) => item.trim())
+    .filter(Boolean) ?? [];
+}
+
 function parsePage(value: string | null) {
   if (value === null) {
     return 1;
@@ -66,6 +95,34 @@ function matchesNftSearch(
   ).includes(searchQuery);
 }
 
+function matchesNftFilters(
+  nft: NftSummary,
+  filters: NftFilters,
+) {
+  const nftPrice = Number(
+    nft.startingPriceEth,
+  );
+
+  return (
+    (filters.searchQuery === "" ||
+      matchesNftSearch(
+        nft,
+        filters.searchQuery,
+      )) &&
+    (filters.categories.length === 0 ||
+      filters.categories.includes(
+        nft.category,
+      )) &&
+    (filters.network === null ||
+      filters.network === "" ||
+      nft.network === filters.network) &&
+    (filters.minimumPrice === undefined ||
+      nftPrice >= filters.minimumPrice) &&
+    (filters.maximumPrice === undefined ||
+      nftPrice <= filters.maximumPrice)
+  );
+}
+
 export const handlers = [
   http.get("/api/nfts", async ({ request }) => {
     const url = new URL(request.url);
@@ -73,9 +130,21 @@ export const handlers = [
       url.searchParams.get("page"),
     );
     const scenario = url.searchParams.get("scenario");
-    const searchQuery = normalizeSearchValue(
-      url.searchParams.get("q") ?? "",
-    );
+    const filters = {
+      categories: parseList(
+        url.searchParams.get("categories"),
+      ),
+      maximumPrice: parseOptionalNumber(
+        url.searchParams.get("maximumPrice"),
+      ),
+      minimumPrice: parseOptionalNumber(
+        url.searchParams.get("minimumPrice"),
+      ),
+      network: url.searchParams.get("network"),
+      searchQuery: normalizeSearchValue(
+        url.searchParams.get("q") ?? "",
+      ),
+    } satisfies NftFilters;
 
     await delay(500);
 
@@ -85,12 +154,9 @@ export const handlers = [
       );
     }
 
-    const matchingNfts =
-      searchQuery === ""
-        ? nftFixtures
-        : nftFixtures.filter((nft) =>
-            matchesNftSearch(nft, searchQuery),
-          );
+    const matchingNfts = nftFixtures.filter(
+      (nft) => matchesNftFilters(nft, filters),
+    );
 
     return HttpResponse.json(
       paginateNfts(matchingNfts, page),

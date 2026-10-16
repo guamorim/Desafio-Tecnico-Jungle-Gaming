@@ -1,10 +1,19 @@
+import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { HomeHero } from "@/components/home/home-hero";
+import { MobileHomeHeader } from "@/components/layout/mobile-home-header";
 import { Button } from "@/components/ui/button";
-import { validateNftCatalogSearch } from "@/features/nfts/catalog-search";
+import {
+  type NftCatalogFilters,
+  validateNftCatalogSearch,
+} from "@/features/nfts/catalog-search";
+import { DesktopCatalogFilters } from "@/features/nfts/components/desktop-catalog-filters";
 import { NftCatalogEmptyState } from "@/features/nfts/components/nft-catalog-empty-state";
+import { MobileCatalogFilters } from "@/features/nfts/components/mobile-catalog-filters";
 import { NftCatalogPagination } from "@/features/nfts/components/nft-catalog-pagination";
+import { NftCatalogSkeleton } from "@/features/nfts/components/nft-catalog-skeleton";
 import { NftCard } from "@/features/nfts/components/nft-card";
 import { nftListQueryOptions } from "@/features/nfts/queries/nft-list-query";
 
@@ -15,6 +24,8 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const catalogSearch = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const {
     data,
@@ -25,72 +36,150 @@ function HomePage() {
     nftListQueryOptions(catalogSearch),
   );
 
-  if (isPending) {
-    return (
-      <main className="grid min-h-svh place-items-center bg-background px-6 text-foreground">
-        <p className="text-sm text-muted-foreground" role="status">
-          Loading NFTs...
-        </p>
-      </main>
-    );
+  function handleSearchSubmit(searchValue: string) {
+    const normalizedSearch = searchValue
+      .trim()
+      .slice(0, 80);
+
+    void navigate({
+      search: (currentSearch) => ({
+        ...currentSearch,
+        q: normalizedSearch || undefined,
+        page: undefined,
+      }),
+    });
+
+    document
+      .getElementById("catalog")
+      ?.scrollIntoView({
+        behavior: "smooth",
+      });
   }
 
-  if (isError) {
-    return (
-      <main className="grid min-h-svh place-items-center bg-background px-6 text-foreground">
-        <section className="flex flex-col items-center gap-4 text-center">
-          <p role="alert">Unable to load NFTs.</p>
+  function handleApplyFilters(
+    filters: NftCatalogFilters,
+  ) {
+    void navigate({
+      search: (currentSearch) => ({
+        ...currentSearch,
+        categories: filters.categories,
+        network: filters.network,
+        minimumPrice: filters.minimumPrice,
+        maximumPrice: filters.maximumPrice,
+        page: undefined,
+      }),
+    });
+
+    document
+      .getElementById("catalog")
+      ?.scrollIntoView({
+        behavior: "smooth",
+      });
+  }
+
+  let catalogContent: ReactNode;
+  let catalogDescription: string;
+
+  if (isPending) {
+    catalogDescription =
+      "Carregando a seleção de NFTs...";
+
+    catalogContent = <NftCatalogSkeleton />;
+  } else if (isError) {
+    catalogDescription =
+      "Não foi possível carregar o catálogo.";
+
+    catalogContent = (
+      <section className="grid min-h-72 place-items-center text-center">
+        <div className="flex flex-col items-center gap-4">
+          <p role="alert">
+            Não foi possível carregar os NFTs.
+          </p>
 
           <Button onClick={() => void refetch()}>
-            Try again
+            Tentar novamente
           </Button>
-        </section>
-      </main>
+        </div>
+      </section>
     );
+  } else {
+    catalogDescription =
+      `Explore ${data.pagination.totalItems} itens digitais de criadores independentes.`;
+
+    catalogContent =
+      data.items.length === 0 ? (
+        <NftCatalogEmptyState />
+      ) : (
+        <>
+          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {data.items.map((nft) => (
+              <li key={nft.id}>
+                <NftCard nft={nft} />
+              </li>
+            ))}
+          </ul>
+
+          <NftCatalogPagination
+            pagination={data.pagination}
+            search={catalogSearch}
+          />
+        </>
+      );
   }
 
   return (
     <main className="min-h-svh bg-background text-foreground">
+      <MobileHomeHeader
+        key={catalogSearch.q ?? ""}
+        initialSearchValue={catalogSearch.q ?? ""}
+        isFilterOpen={isFilterOpen}
+        onOpenFilters={() => {
+          setIsFilterOpen(true);
+        }}
+        onSearchSubmit={handleSearchSubmit}
+      />
+
+      <MobileCatalogFilters
+        open={isFilterOpen}
+        search={catalogSearch}
+        onApply={handleApplyFilters}
+        onOpenChange={setIsFilterOpen}
+      />
+
+      <HomeHero />
+
       <section
-        className="mx-auto w-full max-w-7xl px-6 py-12 sm:py-16 lg:px-8"
+        id="catalog"
+        className="mx-auto w-full max-w-7xl scroll-mt-8 px-6 py-12 sm:py-16 lg:px-8"
         aria-labelledby="catalog-title"
       >
         <header className="mb-8 max-w-2xl space-y-3">
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">
-            Curated NFT marketplace
+            Mercado curado
           </p>
 
-          <h1
+          <h2
             id="catalog-title"
-            className="text-4xl font-semibold tracking-tight sm:text-5xl"
+            className="text-3xl font-semibold tracking-tight sm:text-4xl"
           >
-            Jungle NFT Marketplace
-          </h1>
+            Descubra NFTs extraordinários
+          </h2>
 
           <p className="text-muted-foreground">
-            Explore {data.pagination.totalItems} digital collectibles from
-            independent creators.
+            {catalogDescription}
           </p>
         </header>
 
-        {data.items.length === 0 ? (
-          <NftCatalogEmptyState />
-        ) : (
-          <>
-            <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {data.items.map((nft) => (
-                <li key={nft.id}>
-                  <NftCard nft={nft} />
-                </li>
-              ))}
-            </ul>
+        <div className="grid items-start gap-8 md:grid-cols-[14rem_minmax(0,1fr)] lg:grid-cols-[16rem_minmax(0,1fr)]">
+          <DesktopCatalogFilters
+            search={catalogSearch}
+            onApply={handleApplyFilters}
+          />
 
-            <NftCatalogPagination
-              pagination={data.pagination}
-              search={catalogSearch}
-            />
-          </>
-        )}
+          <div className="min-w-0">
+            {catalogContent}
+          </div>
+        </div>
       </section>
     </main>
   );

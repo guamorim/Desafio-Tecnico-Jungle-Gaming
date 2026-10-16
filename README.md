@@ -4,7 +4,7 @@ Marketplace de NFTs desenvolvido como solução para o [desafio frontend da Jung
 
 O projeto tem como objetivo implementar os fluxos de descoberta, compra e gerenciamento da conta de um colecionador, com dados simulados, suporte a desktop e mobile e atenção a acessibilidade, performance e qualidade das interações.
 
-> Status: em desenvolvimento. A fundação da aplicação e o primeiro catálogo responsivo estão configurados com busca e paginação sincronizadas com a URL, Axios, TanStack Query, MSW e componentes React tipados.
+> Status: em desenvolvimento. A fundação da aplicação e o catálogo responsivo estão configurados com hero adaptável, busca, filtros, multiseleção de categorias e paginação sincronizados com a URL, Axios, TanStack Query, MSW e componentes React tipados.
 
 ## Tecnologias configuradas
 
@@ -70,20 +70,29 @@ O Vite exibirá no terminal o endereço local da aplicação.
 │   └── mockServiceWorker.js       # Service Worker gerado pelo MSW
 ├── src/
 │   ├── components/
-│   │   ├── layout/                 # Estruturas responsivas da aplicação
+│   │   ├── home/
+│   │   │   └── home-hero.tsx      # Hero responsivo da página inicial
+│   │   ├── layout/
+│   │   │   └── mobile-home-header.tsx
 │   │   └── ui/
 │   │       ├── button.tsx          # Botão gerado pelo shadcn/ui
+│   │       ├── sheet.tsx           # Drawer acessível do shadcn/ui
 │   │       └── skeleton.tsx        # Base visual para carregamento
 │   ├── features/
 │   │   └── nfts/
 │   │       ├── api/
 │   │       │   └── list-nfts.ts   # Requisição do catálogo
 │   │       ├── components/
+│   │       │   ├── category-multiselect.tsx
+│   │       │   ├── desktop-catalog-filters.tsx
+│   │       │   ├── mobile-catalog-filters.tsx
 │   │       │   ├── nft-card.tsx   # Card apresentacional de NFT
 │   │       │   ├── nft-catalog-empty-state.tsx
-│   │       │   └── nft-catalog-pagination.tsx
+│   │       │   ├── nft-catalog-pagination.tsx
+│   │       │   └── nft-catalog-skeleton.tsx
 │   │       ├── queries/
 │   │       │   └── nft-list-query.ts
+│   │       ├── catalog-filters.ts  # Opções e limites dos filtros
 │   │       ├── catalog-search.ts   # Estado e validação da URL
 │   │       └── types.ts           # Contratos dos NFTs e paginação
 │   ├── lib/
@@ -129,9 +138,21 @@ O endpoint disponível atualmente é:
 GET /api/nfts
 ```
 
-Ele devolve uma lista determinística de 12 NFTs com busca textual, metadados de paginação e uma latência simulada de 500 ms, permitindo observar o estado de carregamento da interface.
+Ele devolve uma lista determinística de 12 NFTs e aceita busca textual, multiseleção de categorias, rede, preço mínimo, preço máximo e paginação. Uma latência simulada de 500 ms permite observar o estado de carregamento da interface.
 
-A rota inicial apresenta os itens em cards semânticos e em um grid mobile-first de uma a quatro colunas. As imagens são servidas localmente em WebP para manter a demonstração independente de serviços externos.
+A rota inicial apresenta os itens em cards semânticos e em um grid mobile-first de uma a três colunas. As imagens são servidas localmente em WebP para manter a demonstração independente de serviços externos.
+
+### Parâmetros disponíveis
+
+| Parâmetro | Descrição |
+| --- | --- |
+| `q` | Busca por nome, criador ou coleção. |
+| `categories` | Categorias separadas por vírgula, combinadas com lógica OR. |
+| `network` | Filtra por Ethereum, Polygon ou Solana. |
+| `minimumPrice` | Define o preço mínimo em ETH. |
+| `maximumPrice` | Define o preço máximo em ETH. |
+| `page` | Seleciona a página do catálogo. |
+| `scenario=empty` | Produz um estado vazio determinístico. |
 
 ### Cenários determinísticos
 
@@ -143,10 +164,20 @@ Com o servidor de desenvolvimento em execução, os seguintes cenários podem se
 | `http://localhost:5173/?page=2` | Segunda página do catálogo, com os 3 NFTs restantes. |
 | `http://localhost:5173/?q=ape` | Busca textual por nome, criador ou coleção. |
 | `http://localhost:5173/?q=maya` | NFTs associados à criadora Maya K. |
+| `http://localhost:5173/?categories=generative` | NFTs da categoria generativa. |
+| `http://localhost:5173/?categories=generative,collectibles` | NFTs generativos ou colecionáveis. |
+| `http://localhost:5173/?network=ethereum` | NFTs publicados na rede Ethereum. |
+| `http://localhost:5173/?categories=generative,collectibles&network=ethereum` | Categorias combinadas com a rede Ethereum. |
+| `http://localhost:5173/?minimumPrice=0.5&maximumPrice=2` | NFTs entre 0,5 e 2 ETH. |
+| `http://localhost:5173/?categories=photography&network=ethereum` | Estado vazio produzido por filtros sem correspondência. |
 | `http://localhost:5173/?q=nao-existe` | Estado vazio produzido por uma busca sem resultados. |
 | `http://localhost:5173/?scenario=empty` | Estado vazio após a latência simulada. |
 
-O TanStack Router valida os parâmetros `page`, `q` e `scenario`. O TanStack Query inclui a busca validada na chave do cache, o Axios encaminha os parâmetros para a API e o MSW aplica a busca antes de dividir o resultado em páginas de 9 itens.
+Em telas mobile, a busca e o drawer de filtros atualizam os parâmetros da URL. No desktop, uma sidebar permite combinar categorias, rede e faixa de preço.
+
+O filtro de categorias aceita múltiplas opções. As categorias são combinadas com lógica OR, enquanto categorias, rede, preço e busca são combinados entre si com lógica AND.
+
+O TanStack Router valida `page`, `q`, `categories`, `network`, `minimumPrice`, `maximumPrice`, `tab` e `scenario`. Categorias inválidas ou repetidas são eliminadas, e a ordem é normalizada conforme as opções do catálogo. O TanStack Query inclui o estado validado na chave do cache, o Axios encaminha os parâmetros para a API e o MSW aplica os filtros antes de dividir o resultado em páginas de 9 itens.
 
 O parâmetro da primeira página é omitido para manter a URL canônica: `/` representa a página 1 e `/?page=2` representa a página 2. Os controles de paginação preservam os demais filtros durante a navegação.
 

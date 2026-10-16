@@ -2,7 +2,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { RouterProvider, createRouter } from '@tanstack/react-router'
+import {
+  RouterProvider,
+  createRouter,
+  defaultParseSearch,
+  defaultStringifySearch,
+} from '@tanstack/react-router'
 import './index.css'
 import { queryClient } from './lib/query-client'
 import { enableMocking } from './mocks/enable-mocking'
@@ -12,6 +17,26 @@ const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
   scrollRestoration: true,
+  parseSearch: (searchString) => {
+    const search = defaultParseSearch(
+      searchString,
+    ) as Record<string, unknown>
+
+    return {
+      ...search,
+      categories:
+        typeof search.categories === 'string'
+          ? search.categories.split(',')
+          : search.categories,
+    }
+  },
+  stringifySearch: (search) =>
+    defaultStringifySearch({
+      ...search,
+      categories: Array.isArray(search.categories)
+        ? search.categories.join(',')
+        : search.categories,
+    }),
 })
 
 declare module '@tanstack/react-router' {

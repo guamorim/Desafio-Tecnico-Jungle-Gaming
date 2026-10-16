@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -5,20 +6,22 @@ import { Button } from "@/components/ui/button";
 import { PageContainer } from "./page-container";
 
 type MobileHomeHeaderProps = {
-  readonly isFilterOpen: boolean;
-  readonly searchValue: string;
-  readonly onOpenFilters: () => void;
-  readonly onSearchChange: (value: string) => void;
-  readonly onSearchSubmit: () => void;
+  readonly initialSearchValue?: string;
+  readonly isFilterOpen?: boolean;
+  readonly onOpenFilters?: () => void;
+  readonly onSearchSubmit: (value: string) => void;
 };
 
 export function MobileHomeHeader({
-  isFilterOpen,
-  searchValue,
+  initialSearchValue = "",
+  isFilterOpen = false,
   onOpenFilters,
-  onSearchChange,
   onSearchSubmit,
 }: MobileHomeHeaderProps) {
+  const [searchValue, setSearchValue] = useState(
+    initialSearchValue,
+  );
+
   return (
     <header className="md:hidden">
       <PageContainer className="pt-10">
@@ -27,7 +30,7 @@ export function MobileHomeHeader({
           className="flex items-center gap-2"
           onSubmit={(event) => {
             event.preventDefault();
-            onSearchSubmit();
+            onSearchSubmit(searchValue);
           }}
         >
           <label
@@ -52,25 +55,27 @@ export function MobileHomeHeader({
               autoComplete="off"
               className="h-12 w-full appearance-none rounded-2xl border-0 bg-card pl-12 pr-4 text-base font-bold text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
               onChange={(event) => {
-                onSearchChange(event.currentTarget.value);
+                setSearchValue(event.currentTarget.value);
               }}
             />
           </div>
 
-          <Button
-            type="button"
-            size="icon-lg"
-            className="size-12 shrink-0 rounded-2xl"
-            aria-label="Abrir filtros"
-            aria-controls="catalog-filters"
-            aria-expanded={isFilterOpen}
-            onClick={onOpenFilters}
-          >
-            <SlidersHorizontal
-              className="size-6"
-              aria-hidden="true"
-            />
-          </Button>
+          {onOpenFilters && (
+            <Button
+              type="button"
+              size="icon-lg"
+              className="size-12 shrink-0 rounded-2xl"
+              aria-label="Abrir filtros"
+              aria-controls="catalog-filters"
+              aria-expanded={isFilterOpen}
+              onClick={onOpenFilters}
+            >
+              <SlidersHorizontal
+                className="size-6"
+                aria-hidden="true"
+              />
+            </Button>
+          )}
         </form>
       </PageContainer>
     </header>

@@ -1,7 +1,7 @@
 import { NftCardSkeleton } from "./nft-card-skeleton";
 
 const skeletonIds = Array.from(
-  { length: 4 },
+  { length: 9 },
   (_, index) => `nft-card-skeleton-${index}`,
 );
 
@@ -13,7 +13,7 @@ export function NftCatalogSkeleton() {
       </span>
 
       <ul
-        className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
         aria-hidden="true"
       >
         {skeletonIds.map((skeletonId) => (
