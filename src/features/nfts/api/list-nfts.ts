@@ -1,21 +1,46 @@
 import { httpClient } from "@/lib/http-client";
 
+import type {
+  NftCatalogScenario,
+  NftCatalogTab,
+} from "../catalog-search";
 import type { ListNftsResponse } from "../types";
 
-export type NftCatalogScenario = "empty";
-
 export type ListNftsParams = {
+  readonly page?: number;
+  readonly q?: string;
   readonly scenario?: NftCatalogScenario;
+  readonly tab?: NftCatalogTab;
+};
+
+type ListNftsOptions = {
+  readonly signal?: AbortSignal;
 };
 
 export async function listNfts(
-  { scenario }: ListNftsParams = {},
+  {
+    page,
+    q,
+    scenario,
+    tab,
+  }: ListNftsParams = {},
+  {
+    signal,
+  }: ListNftsOptions = {},
 ): Promise<ListNftsResponse> {
-  const { data } = await httpClient.get<ListNftsResponse>("/nfts", {
-    params: {
-      scenario,
-    },
-  });
+  const { data } =
+    await httpClient.get<ListNftsResponse>(
+      "/nfts",
+      {
+        params: {
+          page,
+          q,
+          scenario,
+          tab,
+        },
+        signal,
+      },
+    );
 
   return data;
 }

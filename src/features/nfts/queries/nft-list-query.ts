@@ -10,6 +10,7 @@ export function nftListQueryOptions(
 ) {
   return queryOptions({
     queryKey: ["nfts", "list", params] as const,
-    queryFn: () => listNfts(params),
+    queryFn: ({ signal }) =>
+      listNfts(params, { signal }),
   });
 }

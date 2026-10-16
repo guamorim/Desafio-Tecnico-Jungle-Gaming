@@ -2,30 +2,27 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
-import type { NftCatalogScenario } from "@/features/nfts/api/list-nfts";
+import { validateNftCatalogSearch } from "@/features/nfts/catalog-search";
 import { NftCatalogEmptyState } from "@/features/nfts/components/nft-catalog-empty-state";
+import { NftCatalogPagination } from "@/features/nfts/components/nft-catalog-pagination";
 import { NftCard } from "@/features/nfts/components/nft-card";
 import { nftListQueryOptions } from "@/features/nfts/queries/nft-list-query";
 
-type CatalogSearch = {
-  readonly scenario?: NftCatalogScenario;
-};
-
 export const Route = createFileRoute("/")({
-  validateSearch: (search): CatalogSearch =>
-    search.scenario === "empty"
-      ? { scenario: "empty" }
-      : {},
+  validateSearch: validateNftCatalogSearch,
   component: HomePage,
 });
 
 function HomePage() {
-  const { scenario } = Route.useSearch();
+  const catalogSearch = Route.useSearch();
 
-  const { data, isPending, isError, refetch } = useQuery(
-    nftListQueryOptions(
-      scenario ? { scenario } : {},
-    ),
+  const {
+    data,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery(
+    nftListQueryOptions(catalogSearch),
   );
 
   if (isPending) {
@@ -79,13 +76,20 @@ function HomePage() {
         {data.items.length === 0 ? (
           <NftCatalogEmptyState />
         ) : (
-          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {data.items.map((nft) => (
-              <li key={nft.id}>
-                <NftCard nft={nft} />
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {data.items.map((nft) => (
+                <li key={nft.id}>
+                  <NftCard nft={nft} />
+                </li>
+              ))}
+            </ul>
+
+            <NftCatalogPagination
+              pagination={data.pagination}
+              search={catalogSearch}
+            />
+          </>
         )}
       </section>
     </main>
