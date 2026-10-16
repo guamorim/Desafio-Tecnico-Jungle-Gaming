@@ -28,4 +28,10 @@ export default defineConfig([
       "react-refresh/only-export-components": "off",
     },
   },
+  {
+    files: ["playwright.config.ts", "tests/**/*.ts"],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 ]);

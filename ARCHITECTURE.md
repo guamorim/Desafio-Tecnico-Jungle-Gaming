@@ -207,7 +207,7 @@ O endpoint do carrinho valida o estado novamente. A interface limita a quantidad
 Tailwind CSS é usado diretamente nos componentes. O breakpoint `md` separa as principais experiências:
 
 - desktop: navegação completa, sidebar de filtros e miniaturas verticais;
-- mobile: busca destacada, filtros em drawer e detalhe em card compacto.
+- mobile: busca destacada, filtros em drawer, navegação inferior da homepage e detalhe em card compacto.
 
 Quando a estrutura muda significativamente, são usados componentes separados, como os cabeçalhos. Quando muda apenas a disposição, o mesmo componente recebe classes responsivas.
 
@@ -262,7 +262,9 @@ Socket.IO
 
 ### Testes e qualidade
 
-Playwright cobrirá os fluxos críticos e a regressão visual. Lighthouse será executado sobre o build de produção. Os cenários determinísticos do MSW permitirão testar loading, vazio, erro, conflito de estoque e sucesso sem depender de serviços externos.
+Playwright já está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. O smoke test valida a inicialização da homepage, a resposta do catálogo via MSW e a navegação inferior responsiva. Falhas preservam screenshot e trace, e o relatório HTML permanece como artefato local.
+
+A cobertura será expandida junto de cada fluxo crítico e receberá regressão visual com baselines versionadas. Lighthouse será executado sobre o mesmo build de produção. Os cenários determinísticos do MSW permitirão testar loading, vazio, erro, conflito de estoque e sucesso sem depender de serviços externos.
 
 ## Regras para novas features
 

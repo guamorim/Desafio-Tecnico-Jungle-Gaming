@@ -13,6 +13,7 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 ### Homepage
 
 - Cabeçalhos específicos para desktop e mobile.
+- Barra inferior exclusiva da homepage mobile, com acesso ao carrinho e contador sincronizado.
 - Hero responsivo baseado na referência visual.
 - Busca por nome, criador ou coleção.
 - Filtro de categorias com multisseleção.
@@ -80,8 +81,9 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - Lucide React
 - Space Mono
 - ESLint
+- Playwright
 
-Socket.IO, Playwright e Lighthouse fazem parte das próximas etapas do desafio.
+Socket.IO e Lighthouse fazem parte das próximas etapas do desafio. A base do Playwright já executa um smoke test em Chromium desktop e mobile.
 
 ## Requisitos
 
@@ -96,6 +98,7 @@ Essas são as versões utilizadas no ambiente de desenvolvimento atual.
 git clone https://github.com/guamorim/Desafio-Tecnico-Jungle-Gaming.git
 cd Desafio-Tecnico-Jungle-Gaming
 npm install
+npx playwright install chromium
 ```
 
 ## Execução local
@@ -114,6 +117,9 @@ O Vite exibirá no terminal o endereço local da aplicação, normalmente `http:
 | `npm run build` | Verifica os tipos e gera o bundle de produção. |
 | `npm run lint` | Executa a análise estática do projeto. |
 | `npm run preview` | Serve localmente o bundle de produção. |
+| `npm run test:e2e` | Executa os testes Playwright em Chromium desktop e mobile. |
+| `npm run test:e2e:ui` | Abre a interface interativa do Playwright. |
+| `npm run test:e2e:report` | Abre o último relatório HTML. |
 
 ## Estrutura principal
 
@@ -121,6 +127,9 @@ O Vite exibirá no terminal o endereço local da aplicação, normalmente `http:
 public/
 ├── images/nfts/                 # Artes WebP usadas na demonstração
 └── mockServiceWorker.js         # Service Worker gerado pelo MSW
+
+tests/e2e/                       # Testes de navegador com Playwright
+playwright.config.ts             # Viewports, servidor e artefatos E2E
 
 src/
 ├── components/
@@ -283,7 +292,7 @@ Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite 
 - Checkout, pagamento simulado e confirmação.
 - Perfil e gerenciamento de carteiras.
 - Atualizações de estoque com Socket.IO.
-- Testes E2E e regressão visual com Playwright.
+- Expansão dos testes E2E e regressão visual com Playwright.
 - Auditoria e documentação do Lighthouse.
 - Deploy público.
 
@@ -294,7 +303,10 @@ A base atual é validada continuamente com:
 ```bash
 npm run lint
 npm run build
+npm run test:e2e
 ```
+
+O smoke test atual gera o build de produção, inicia o preview com MSW e valida a homepage e o catálogo em `1440 × 900` e `390 × 844`. Falhas preservam screenshot e trace; o relatório HTML não é versionado.
 
 ## Desenvolvimento assistido por IA
 

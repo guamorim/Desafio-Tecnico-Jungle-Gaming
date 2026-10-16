@@ -6,6 +6,7 @@ import { HomeHero } from "@/components/home/home-hero";
 import { FeaturedNftCard } from "@/components/home/featured-nft-card";
 import { HomeEditorialSections } from "@/components/home/home-editorial-sections";
 import { DesktopHomeHeader } from "@/components/layout/desktop-home-header";
+import { MobileBottomNavigation } from "@/components/layout/mobile-bottom-navigation";
 import { MobileHomeHeader } from "@/components/layout/mobile-home-header";
 import { Button } from "@/components/ui/button";
 import { getGuestOwnerId } from "@/features/cart/guest-owner";
@@ -277,6 +278,10 @@ function HomePage() {
       </section>
 
       <HomeEditorialSections />
+
+      <MobileBottomNavigation
+        cartItemCount={cartItemCount}
+      />
     </main>
   );
 }
