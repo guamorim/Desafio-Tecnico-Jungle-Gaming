@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { isAxiosError } from "axios";
 
+import { DesktopDetailHeader } from "@/components/layout/desktop-detail-header";
 import { PageContainer } from "@/components/layout/page-container";
+import { getGuestOwnerId } from "@/features/cart/guest-owner";
+import { cartQueryOptions } from "@/features/cart/queries/cart-query";
 import { NftDetailContent } from "@/features/nfts/components/nft-detail-content";
 import { NftDetailError } from "@/features/nfts/components/nft-detail-error";
 import { NftDetailSkeleton } from "@/features/nfts/components/nft-detail-skeleton";
@@ -16,12 +20,22 @@ export const Route = createFileRoute(
 
 function NftDetailPage() {
   const { nftId } = Route.useParams();
+  const [cartOwnerId] = useState(getGuestOwnerId);
+  const { data: cart } = useQuery(
+    cartQueryOptions(cartOwnerId),
+  );
   const {
     data: nft,
     error,
     isPending,
     refetch,
   } = useQuery(nftDetailQueryOptions(nftId));
+
+  const cartItemCount =
+    cart?.items.reduce(
+      (total, item) => total + item.quantity,
+      0,
+    ) ?? 0;
 
   let content;
 
@@ -38,11 +52,14 @@ function NftDetailPage() {
       />
     );
   } else {
-    content = <NftDetailContent nft={nft} />;
+    content = <NftDetailContent key={nft.id} nft={nft} />;
   }
 
   return (
     <main className="min-h-svh bg-background text-foreground">
+      <DesktopDetailHeader
+        cartItemCount={cartItemCount}
+      />
       <PageContainer>{content}</PageContainer>
     </main>
   );

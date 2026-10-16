@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { PageContainer } from "./page-container";
 
 type DesktopHomeHeaderProps = {
+  readonly cartItemCount: number;
   readonly initialSearchValue?: string;
   readonly onSearchSubmit: (
     value: string,
@@ -19,6 +20,7 @@ type DesktopHomeHeaderProps = {
 };
 
 export function DesktopHomeHeader({
+  cartItemCount,
   initialSearchValue = "",
   onSearchSubmit,
 }: DesktopHomeHeaderProps) {
@@ -171,16 +173,29 @@ export function DesktopHomeHeader({
 
             {!isSearchOpen && (
               <>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Carrinho — disponível em breve"
-                  title="Carrinho disponível em breve"
-                  disabled
-                >
-                  <ShoppingCart aria-hidden="true" />
-                </Button>
+                <div className="relative">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Carrinho com ${cartItemCount} unidades — página disponível em breve`}
+                    title="Carrinho disponível em breve"
+                    disabled
+                  >
+                    <ShoppingCart aria-hidden="true" />
+                  </Button>
+
+                  {cartItemCount > 0 && (
+                    <span
+                      className="pointer-events-none absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-primary text-[0.625rem] font-bold text-primary-foreground"
+                      aria-hidden="true"
+                    >
+                      {cartItemCount > 9
+                        ? "9+"
+                        : cartItemCount}
+                    </span>
+                  )}
+                </div>
 
                 <Button
                   type="button"

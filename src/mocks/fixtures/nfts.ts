@@ -1,5 +1,6 @@
 import type {
   NftDetail,
+  NftEdition,
   NftSummary,
 } from "@/features/nfts/types";
 
@@ -143,7 +144,7 @@ export const nftFixtures = [
     id: "nft-golden-beat",
     name: "Golden Beat",
     creatorName: "Maya K.",
-    collectionName: "Primal Frequencies",
+    collectionName: "Jungle Genesis",
     category: "music",
     network: "ethereum",
     imageUrl: "/images/nfts/aurora-ape.webp",
@@ -186,14 +187,128 @@ export const nftFixtures = [
   },
 ] as const satisfies readonly NftSummary[];
 
+function createNftEditions(
+  nft: NftSummary,
+  index: number,
+): readonly NftEdition[] {
+  return [
+    {
+      id: `${nft.id}-one-of-one`,
+      name: "1/1",
+      priceEth: multiplyEthPrice(
+        nft.startingPriceEth,
+        3,
+      ),
+      availableQuantity: index % 4 === 0 ? 0 : 1,
+      maximumPurchaseQuantity: 1,
+      version: 1,
+    },
+    {
+      id: `${nft.id}-one-of-ten`,
+      name: "1/10",
+      priceEth: multiplyEthPrice(
+        nft.startingPriceEth,
+        2,
+      ),
+      availableQuantity: Math.min(
+        nft.availableQuantity,
+        10,
+      ),
+      maximumPurchaseQuantity: 2,
+      version: 1,
+    },
+    {
+      id: `${nft.id}-one-of-fifty`,
+      name: "1/50",
+      priceEth: nft.startingPriceEth,
+      availableQuantity: nft.availableQuantity,
+      maximumPurchaseQuantity: Math.min(
+        nft.availableQuantity,
+        5,
+      ),
+      version: 1,
+    },
+    {
+      id: `${nft.id}-open`,
+      name: "ABERTA",
+      priceEth: nft.startingPriceEth,
+      availableQuantity: 100 + index * 10,
+      maximumPurchaseQuantity: 10,
+      version: 1,
+    },
+  ];
+}
+
+function multiplyEthPrice(
+  value: string,
+  multiplier: number,
+) {
+  const [integerPart, fractionPart = ""] =
+    value.split(".");
+  const scale = 10n ** BigInt(fractionPart.length);
+  const units =
+    BigInt(integerPart) * scale +
+    BigInt(fractionPart || "0");
+  const result = units * BigInt(multiplier);
+  const resultInteger = result / scale;
+  const resultFraction = (result % scale)
+    .toString()
+    .padStart(fractionPart.length, "0")
+    .replace(/0+$/, "");
+
+  return resultFraction
+    ? `${resultInteger}.${resultFraction}`
+    : resultInteger.toString();
+}
+
 export const nftDetailFixtures = nftFixtures.map(
-  (nft) => ({
+  (nft, index) => ({
     ...nft,
-    description: `${nft.name} é uma obra da coleção ${nft.collectionName}, criada por ${nft.creatorName}.`,
-    gallery: [nft.imageUrl],
-    maximumPurchaseQuantity: Math.min(
-      nft.availableQuantity,
-      5,
+    attributes:
+      nft.id === "nft-aurora-ape"
+        ? ["Óculos", "Aurora", "Raro"]
+        : [nft.category, nft.network, "Limitado"],
+    contractAddress: `0x7A42${String(index + 1).padStart(4, "0")}19E8`,
+    description:
+      nft.id === "nft-aurora-ape"
+        ? "Um colecionável digital 1/50 da coleção Jungle Genesis, inspirado pelas luzes da aurora e verificado na Ethereum."
+        : `${nft.name} é uma obra da coleção ${nft.collectionName}, criada por ${nft.creatorName}.`,
+    editions: createNftEditions(nft, index),
+    gallery: Array.from(
+      { length: 4 },
+      () => nft.imageUrl,
     ),
+    rating: nft.id === "nft-aurora-ape" ? "4.8" : "4.7",
+    relatedNfts: nftFixtures
+      .filter(
+        (candidate) =>
+          candidate.id !== nft.id &&
+          candidate.collectionName === nft.collectionName,
+      )
+      .slice(0, 5),
+    reviewCount: nft.id === "nft-aurora-ape" ? 19 : 12 + index,
+    reviews: [
+      {
+        id: `${nft.id}-review-1`,
+        authorName: "Lia Collector",
+        comment:
+          "A arte tem uma identidade muito forte e os detalhes funcionam muito bem em alta resolução.",
+        createdAt: "2026-10-14T18:30:00.000Z",
+        rating: 5,
+      },
+      {
+        id: `${nft.id}-review-2`,
+        authorName: "Rafael Web3",
+        comment:
+          "Boa apresentação da coleção e informações claras sobre a edição.",
+        createdAt: "2026-10-13T12:10:00.000Z",
+        rating: 4,
+      },
+    ],
+    royaltyPercentage: "5",
+    tokenId:
+      nft.id === "nft-aurora-ape"
+        ? "#0042"
+        : `#${String(100 + index * 23).padStart(4, "0")}`,
   }),
 ) satisfies readonly NftDetail[];

@@ -7,13 +7,20 @@ import {
   type NftCatalogTab,
 } from "@/features/nfts/catalog-filters";
 import type {
+  AddCartItemInput,
+  Cart,
+  CartItem,
+  CartResponse,
+} from "@/features/cart/types";
+import type {
   ListNftsResponse,
+  NftDetail,
   NftSummary,
 } from "@/features/nfts/types";
 import {
-  nftDetailFixtures,
-  nftFixtures,
-} from "./fixtures/nfts";
+  getMockDatabase,
+  saveMockCart,
+} from "./mock-database";
 
 const pageSize = 9;
 const newReleaseCutoff = Date.parse(
@@ -201,6 +208,79 @@ function matchesNftFilters(
   );
 }
 
+function isAddCartItemInput(
+  value: unknown,
+): value is AddCartItemInput {
+  if (
+    typeof value !== "object" ||
+    value === null
+  ) {
+    return false;
+  }
+
+  const input = value as Record<string, unknown>;
+
+  return (
+    typeof input.nftId === "string" &&
+    typeof input.editionId === "string" &&
+    typeof input.quantity === "number" &&
+    Number.isInteger(input.quantity) &&
+    input.quantity > 0
+  );
+}
+
+function createEmptyCart(ownerId: string): Cart {
+  return {
+    id: `cart-${ownerId}`,
+    ownerId,
+    items: [],
+    version: 0,
+  };
+}
+
+function createCartResponse(
+  cart: Cart,
+  nfts: readonly NftDetail[],
+): CartResponse {
+  return {
+    ...cart,
+    items: cart.items.flatMap((item) => {
+      const nft = nfts.find(
+        (candidate) => candidate.id === item.nftId,
+      );
+      const edition = nft?.editions.find(
+        (candidate) =>
+          candidate.id === item.editionId,
+      );
+
+      if (!nft || !edition) {
+        return [];
+      }
+
+      return [
+        {
+          ...item,
+          nft: {
+            name: nft.name,
+            collectionName: nft.collectionName,
+            imageUrl: nft.imageUrl,
+            version: nft.version,
+          },
+          edition: {
+            name: edition.name,
+            priceEth: edition.priceEth,
+            availableQuantity:
+              edition.availableQuantity,
+            maximumPurchaseQuantity:
+              edition.maximumPurchaseQuantity,
+            version: edition.version,
+          },
+        },
+      ];
+    }),
+  };
+}
+
 export const handlers = [
   http.get("/api/nfts", async ({ request }) => {
     const url = new URL(request.url);
@@ -238,7 +318,7 @@ export const handlers = [
       );
     }
 
-    const matchingNfts = nftFixtures.filter(
+    const matchingNfts = getMockDatabase().nfts.filter(
       (nft) => matchesNftFilters(nft, filters),
     );
 
@@ -257,7 +337,7 @@ export const handlers = [
       await delay(500);
 
       const nftId = String(params.nftId);
-      const nft = nftDetailFixtures.find(
+      const nft = getMockDatabase().nfts.find(
         (item) => item.id === nftId,
       );
 
@@ -269,6 +349,137 @@ export const handlers = [
       }
 
       return HttpResponse.json(nft);
+    },
+  ),
+  http.get("/api/cart", async ({ request }) => {
+    await delay(300);
+
+    const ownerId = request.headers.get(
+      "X-Cart-Owner-Id",
+    );
+
+    if (!ownerId) {
+      return HttpResponse.json(
+        { message: "Identidade do carrinho ausente." },
+        { status: 400 },
+      );
+    }
+
+    const cart =
+      getMockDatabase().carts[ownerId] ??
+      createEmptyCart(ownerId);
+
+    return HttpResponse.json(
+      createCartResponse(
+        cart,
+        getMockDatabase().nfts,
+      ),
+    );
+  }),
+  http.post(
+    "/api/cart/items",
+    async ({ request }) => {
+      await delay(500);
+
+      const ownerId = request.headers.get(
+        "X-Cart-Owner-Id",
+      );
+      const input: unknown = await request.json();
+
+      if (!ownerId) {
+        return HttpResponse.json(
+          { message: "Identidade do carrinho ausente." },
+          { status: 400 },
+        );
+      }
+
+      if (!isAddCartItemInput(input)) {
+        return HttpResponse.json(
+          { message: "Item do carrinho inválido." },
+          { status: 400 },
+        );
+      }
+
+      const database = getMockDatabase();
+      const nft = database.nfts.find(
+        (item) => item.id === input.nftId,
+      );
+
+      if (!nft) {
+        return HttpResponse.json(
+          { message: "NFT não encontrado." },
+          { status: 404 },
+        );
+      }
+
+      const edition = nft.editions.find(
+        (item) => item.id === input.editionId,
+      );
+
+      if (!edition) {
+        return HttpResponse.json(
+          { message: "Edição não encontrada." },
+          { status: 404 },
+        );
+      }
+
+      const currentCart =
+        database.carts[ownerId] ??
+        createEmptyCart(ownerId);
+
+      const itemId = `${nft.id}:${edition.id}`;
+      const currentItem = currentCart.items.find(
+        (item) => item.id === itemId,
+      );
+      const nextQuantity =
+        (currentItem?.quantity ?? 0) + input.quantity;
+      const purchaseLimit = Math.min(
+        edition.availableQuantity,
+        edition.maximumPurchaseQuantity,
+      );
+
+      if (nextQuantity > purchaseLimit) {
+        return HttpResponse.json(
+          {
+            message:
+              purchaseLimit === 0
+                ? "Esta edição está esgotada."
+                : `O limite desta edição é ${purchaseLimit}.`,
+          },
+          { status: 409 },
+        );
+      }
+
+      const nextItem = {
+        id: itemId,
+        nftId: nft.id,
+        editionId: edition.id,
+        quantity: nextQuantity,
+      } satisfies CartItem;
+
+      const nextItems = currentItem
+        ? currentCart.items.map((item) =>
+            item.id === itemId ? nextItem : item,
+          )
+        : [...currentCart.items, nextItem];
+
+      const nextCart = {
+        ...currentCart,
+        items: nextItems,
+        version: currentCart.version + 1,
+      } satisfies Cart;
+
+      saveMockCart(nextCart);
+
+      return HttpResponse.json(
+        createCartResponse(
+          nextCart,
+          database.nfts,
+        ),
+        {
+          status: currentItem ? 200 : 201,
+        },
+      );
     },
   ),
 ];

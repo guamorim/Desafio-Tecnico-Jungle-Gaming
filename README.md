@@ -2,36 +2,81 @@
 
 Marketplace de NFTs desenvolvido como solução para o [desafio frontend da Jungle](https://github.com/junglegaming/frontend-challenge).
 
-O projeto tem como objetivo implementar os fluxos de descoberta, compra e gerenciamento da conta de um colecionador, com dados simulados, suporte a desktop e mobile e atenção a acessibilidade, performance e qualidade das interações.
+A aplicação simula a descoberta e a compra de NFTs com dados determinísticos, interface responsiva e uma arquitetura preparada para autenticação, checkout, eventos em tempo real e testes automatizados.
 
-> Status: em desenvolvimento. A fundação da aplicação, o catálogo responsivo e a primeira versão da página de detalhes estão configurados com busca, filtros, multiseleção de categorias, abas, ordenação, paginação, rotas tipadas, estados de carregamento e tratamento de erros.
+As principais decisões técnicas e os pontos de extensão estão documentados em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-## Tecnologias configuradas
+> Status: em desenvolvimento. A homepage e a interface da página de detalhes estão concluídas. O carrinho já possui contratos, API mockada e persistência, mas sua página dedicada ainda será implementada.
+
+## Funcionalidades implementadas
+
+### Homepage
+
+- Cabeçalhos específicos para desktop e mobile.
+- Hero responsivo baseado na referência visual.
+- Busca por nome, criador ou coleção.
+- Filtro de categorias com multisseleção.
+- Filtros de rede e faixa de preço.
+- Abas para todos os NFTs, novos lançamentos e itens em alta.
+- Ordenação por data e preço.
+- Paginação preservando busca, filtros e ordenação.
+- Estado do catálogo sincronizado com a URL.
+- Skeleton, erro com nova tentativa e estado vazio.
+- NFT em destaque na sidebar desktop.
+- Duas chamadas editoriais.
+- Seção “Diário da Cunhagem”.
+- Rodapé global e responsivo.
+
+### Detalhes do NFT
+
+- Rota dinâmica e tipada `/nfts/$nftId`.
+- Skeleton, erro genérico e estado `404`.
+- Galeria com quatro miniaturas.
+- Quatro edições por NFT: `ABERTA`, `1/50`, `1/10` e `1/1`.
+- Sincronização bidirecional entre miniatura e edição selecionada.
+- Preço, estoque e limite de compra próprios para cada edição.
+- Controle de quantidade respeitando disponibilidade e limite.
+- Avaliação agregada e comentários simulados.
+- Metadados de token, coleção e atributos.
+- Informações de rede, contrato ERC-721 e direitos autorais.
+- Cópia da URL do NFT para a área de transferência.
+- Lista compacta de NFTs da mesma coleção.
+- Layout específico para desktop e mobile.
+
+### Carrinho — fundação
+
+- Identidade estável para visitantes anônimos.
+- Consulta do carrinho com TanStack Query.
+- Inclusão de uma edição pelo painel de compra.
+- Validação de NFT, edição, quantidade, estoque e limite de compra no MSW.
+- Contador de unidades nos cabeçalhos desktop.
+- Persistência do banco mockado no `localStorage`.
+- Atualização do cache após uma inclusão bem-sucedida.
+- Mensagens de sucesso e erro na interface.
+
+## Tecnologias
 
 - React 19
 - TypeScript 6
 - Vite 8
-- TanStack Router com rotas baseadas em arquivos
-- TanStack Query para estado remoto e cache
-- TanStack Query Devtools no ambiente de desenvolvimento
-- Axios como cliente HTTP
-- MSW para simulação da API no navegador
+- TanStack Router
+- TanStack Query e Query Devtools
+- Axios
+- MSW
 - Tailwind CSS 4
 - shadcn/ui com Base UI
 - Lucide React
 - Space Mono
 - ESLint
 
-## Stack restante do desafio
-
-As próximas etapas integrarão Socket.IO, Playwright e auditorias com Lighthouse.
+Socket.IO, Playwright e Lighthouse fazem parte das próximas etapas do desafio.
 
 ## Requisitos
 
 - Node.js 24
 - npm 12
 
-Essas são as versões usadas no ambiente de desenvolvimento atual.
+Essas são as versões utilizadas no ambiente de desenvolvimento atual.
 
 ## Instalação
 
@@ -43,199 +88,187 @@ npm install
 
 ## Execução local
 
-Inicie o servidor de desenvolvimento:
-
 ```bash
 npm run dev
 ```
 
-O Vite exibirá no terminal o endereço local da aplicação.
+O Vite exibirá no terminal o endereço local da aplicação, normalmente `http://localhost:5173`.
 
-## Comandos disponíveis
+## Comandos
 
 | Comando | Descrição |
 | --- | --- |
-| `npm run dev` | Inicia o servidor de desenvolvimento com atualização automática. |
-| `npm run build` | Verifica os tipos e gera o bundle de produção em `dist`. |
-| `npm run lint` | Executa a análise estática do código. |
-| `npm run preview` | Serve localmente o bundle gerado pelo build. |
+| `npm run dev` | Inicia o servidor de desenvolvimento. |
+| `npm run build` | Verifica os tipos e gera o bundle de produção. |
+| `npm run lint` | Executa a análise estática do projeto. |
+| `npm run preview` | Serve localmente o bundle de produção. |
 
-## Estrutura atual
+## Estrutura principal
 
 ```text
-.
-├── public/
-│   ├── images/
-│   │   └── nfts/                  # Artes locais otimizadas do catálogo
-│   └── mockServiceWorker.js       # Service Worker gerado pelo MSW
-├── src/
-│   ├── components/
-│   │   ├── home/
-│   │   │   └── home-hero.tsx      # Hero responsivo da página inicial
-│   │   ├── layout/
-│   │   │   ├── desktop-home-header.tsx
-│   │   │   ├── mobile-home-header.tsx
-│   │   │   └── page-container.tsx
-│   │   └── ui/
-│   │       ├── button.tsx          # Botão gerado pelo shadcn/ui
-│   │       ├── sheet.tsx           # Drawer acessível do shadcn/ui
-│   │       └── skeleton.tsx        # Base visual para carregamento
-│   ├── features/
-│   │   └── nfts/
-│   │       ├── api/
-│   │       │   ├── get-nft.ts     # Requisição de um NFT por ID
-│   │       │   └── list-nfts.ts   # Requisição do catálogo
-│   │       ├── components/
-│   │       │   ├── category-multiselect.tsx
-│   │       │   ├── desktop-catalog-filters.tsx
-│   │       │   ├── mobile-catalog-filters.tsx
-│   │       │   ├── nft-card.tsx   # Card apresentacional de NFT
-│   │       │   ├── nft-detail-content.tsx
-│   │       │   ├── nft-detail-error.tsx
-│   │       │   ├── nft-detail-skeleton.tsx
-│   │       │   ├── nft-catalog-empty-state.tsx
-│   │       │   ├── nft-catalog-pagination.tsx
-│   │       │   ├── nft-catalog-skeleton.tsx
-│   │       │   ├── nft-catalog-sort.tsx
-│   │       │   └── nft-catalog-tabs.tsx
-│   │       ├── queries/
-│   │       │   ├── nft-detail-query.ts
-│   │       │   └── nft-list-query.ts
-│   │       ├── catalog-filters.ts  # Opções e limites dos filtros
-│   │       ├── catalog-search.ts   # Estado e validação da URL
-│   │       └── types.ts           # Contratos dos NFTs e paginação
-│   ├── lib/
-│   │   ├── http-client.ts         # Instância compartilhada do Axios
-│   │   ├── query-client.ts        # Configuração do TanStack Query
-│   │   └── utils.ts
-│   ├── mocks/
-│   │   ├── fixtures/
-│   │   │   └── nfts.ts            # Dados determinísticos
-│   │   ├── browser.ts             # Worker usado pelo navegador
-│   │   ├── enable-mocking.ts      # Inicialização condicional
-│   │   └── handlers.ts            # Endpoints simulados
-│   ├── routes/
-│   │   ├── __root.tsx
-│   │   ├── index.tsx
-│   │   └── nfts/
-│   │       └── $nftId.tsx         # Página dinâmica de detalhes
-│   ├── index.css
-│   ├── main.tsx
-│   └── routeTree.gen.ts
-└── components.json
+public/
+├── images/nfts/                 # Artes WebP usadas na demonstração
+└── mockServiceWorker.js         # Service Worker gerado pelo MSW
+
+src/
+├── components/
+│   ├── home/                    # Hero, destaque e conteúdo editorial
+│   ├── layout/                  # Cabeçalhos, container e rodapé global
+│   └── ui/                      # Componentes do shadcn/ui
+├── features/
+│   ├── cart/
+│   │   ├── api/                 # Consulta e inclusão no carrinho
+│   │   ├── mutations/           # Mutation do TanStack Query
+│   │   ├── queries/             # Query e chave do carrinho
+│   │   ├── guest-owner.ts       # Identidade persistida do visitante
+│   │   └── types.ts
+│   └── nfts/
+│       ├── api/                 # Catálogo e detalhes
+│       ├── components/          # Filtros, cards, galeria e detalhes
+│       ├── queries/             # Query options do TanStack Query
+│       ├── catalog-filters.ts
+│       ├── catalog-search.ts
+│       └── types.ts
+├── lib/
+│   ├── http-client.ts           # Instância compartilhada do Axios
+│   ├── query-client.ts          # Configuração do TanStack Query
+│   └── utils.ts
+├── mocks/
+│   ├── fixtures/nfts.ts         # Dados determinísticos
+│   ├── browser.ts
+│   ├── enable-mocking.ts
+│   ├── handlers.ts              # Endpoints REST simulados
+│   └── mock-database.ts         # Banco mockado persistente
+└── routes/
+    ├── __root.tsx               # Layout raiz e rodapé
+    ├── index.tsx                # Homepage
+    └── nfts/$nftId.tsx          # Detalhes de um NFT
 ```
 
-O arquivo `src/routeTree.gen.ts` é gerado automaticamente e não deve ser editado manualmente.
+O arquivo `src/routeTree.gen.ts` é gerado automaticamente pelo TanStack Router e não deve ser editado manualmente.
 
-Os componentes em `src/components/ui` são adicionados pelo CLI do shadcn/ui, passam a fazer parte do código-fonte do projeto e podem ser adaptados à identidade visual do marketplace.
+Os componentes adicionados pelo shadcn/ui passam a fazer parte do código-fonte e podem ser adaptados à identidade visual do projeto.
+
+## Arquitetura de dados
+
+O fluxo principal é:
+
+```text
+Interface
+  → TanStack Router
+  → TanStack Query
+  → Axios
+  → MSW
+  → fixtures e banco mockado
+```
+
+O TanStack Router valida e tipa o estado presente na URL. O TanStack Query usa esse estado em suas chaves de cache, enquanto o Axios envia os parâmetros para a API REST simulada pelo MSW.
+
+Quando uma consulta é substituída durante a navegação, o `AbortSignal` fornecido pelo TanStack Query é encaminhado ao Axios para cancelar a requisição anterior.
+
+### Endpoints simulados
+
+```text
+GET  /api/nfts
+GET  /api/nfts/:nftId
+GET  /api/cart
+POST /api/cart/items
+```
+
+As rotas do carrinho usam o header `X-Cart-Owner-Id`. Para visitantes anônimos, o cliente cria um identificador com `crypto.randomUUID()` e o mantém no `localStorage`.
+
+O endpoint de inclusão valida:
+
+- existência do NFT;
+- existência da edição;
+- formato e valor da quantidade;
+- estoque disponível;
+- limite máximo por compra;
+- quantidade já presente no carrinho.
+
+O MSW devolve erros `400`, `404` ou `409` conforme o problema encontrado.
+
+## Parâmetros do catálogo
+
+| Parâmetro | Descrição |
+| --- | --- |
+| `q` | Busca por nome, criador ou coleção. |
+| `categories` | Categorias separadas por vírgula e combinadas com lógica OR. |
+| `network` | Filtra por Ethereum, Polygon ou Solana. |
+| `minimumPrice` | Preço mínimo em ETH. |
+| `maximumPrice` | Preço máximo em ETH. |
+| `tab` | Seleciona `new` ou `trending`; a ausência representa todos. |
+| `sort` | Seleciona `price-asc` ou `price-desc`; a ausência representa recentes. |
+| `page` | Página atual do catálogo. |
+| `scenario=empty` | Força um resultado vazio determinístico. |
+
+Busca, categorias, rede e preço são combinados com lógica AND. Categorias selecionadas entre si usam lógica OR.
+
+Valores inválidos ou repetidos são normalizados. Valores padrão, como página 1, `tab=all` e `sort=recent`, são omitidos para manter URLs canônicas.
+
+## Cenários para teste manual
+
+Com o servidor executando em `http://localhost:5173`:
+
+| URL | Resultado esperado |
+| --- | --- |
+| `/` | Homepage e primeira página do catálogo. |
+| `/?page=2` | Segunda página do catálogo. |
+| `/?q=ape` | Busca textual. |
+| `/?categories=generative,collectibles` | Multisseleção de categorias. |
+| `/?network=ethereum` | NFTs da rede Ethereum. |
+| `/?minimumPrice=0.5&maximumPrice=2` | NFTs dentro da faixa de preço. |
+| `/?tab=new` | Novos lançamentos. |
+| `/?tab=trending` | Itens em alta. |
+| `/?sort=price-asc` | Ordenação por menor preço. |
+| `/?q=nao-existe` | Estado vazio produzido pela busca. |
+| `/?scenario=empty` | Estado vazio forçado pelo MSW. |
+| `/nfts/nft-aurora-ape` | Detalhes, edições e compra do Aurora Ape. |
+| `/nfts/nft-inexistente` | Estado de NFT não encontrado. |
+
+As respostas possuem latência simulada para permitir a inspeção dos skeletons e transições de carregamento.
 
 ## Variáveis de ambiente
 
-Os mocks do MSW são habilitados por padrão para que o projeto funcione sem um backend externo.
-
-Para desabilitá-los, crie um arquivo `.env.local`:
+O MSW é habilitado por padrão. Para executar a aplicação sem os mocks, crie `.env.local`:
 
 ```env
 VITE_ENABLE_MOCKS=false
 ```
 
-Somente o valor exato `false` desabilita os mocks. Variáveis expostas ao código do navegador pelo Vite precisam começar com `VITE_`.
+Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite precisam começar com `VITE_`.
 
-## Dados simulados
+## Decisões atuais
 
-Os endpoints disponíveis atualmente são:
+- As imagens são locais e otimizadas em WebP.
+- As quatro edições reutilizam temporariamente a imagem principal do NFT.
+- Alguns NFTs ainda compartilham a mesma arte; novas variações visuais serão produzidas posteriormente.
+- Botões editoriais sem fluxo previsto no desafio permanecem apenas apresentacionais.
+- O projeto não realiza transações reais nem depende de blockchain, extensão de carteira ou gateway de pagamento.
 
-```text
-GET /api/nfts
-GET /api/nfts/:nftId
-```
+## Próximas etapas
 
-Ele devolve uma lista determinística de 12 NFTs e aceita busca textual, multiseleção de categorias, rede, preço mínimo, preço máximo, abas, ordenação e paginação. Uma latência simulada de 500 ms permite observar o estado de carregamento da interface.
-
-Cada NFT possui uma data fixa em `listedAt` e um indicador público `isTrending`. Esses dados mantêm as abas e a ordenação reproduzíveis independentemente do relógio do ambiente.
-
-O endpoint de detalhes procura o NFT pelo identificador, acrescenta descrição, galeria e limite de compra e devolve `404` quando o item não existe. A latência simulada também permite validar o skeleton da página acessada diretamente.
-
-A rota inicial apresenta os itens em cards semânticos e em um grid mobile-first de uma a três colunas. As imagens são servidas localmente em WebP para manter a demonstração independente de serviços externos.
-
-### Parâmetros disponíveis
-
-| Parâmetro | Descrição |
-| --- | --- |
-| `q` | Busca por nome, criador ou coleção. |
-| `categories` | Categorias separadas por vírgula, combinadas com lógica OR. |
-| `network` | Filtra por Ethereum, Polygon ou Solana. |
-| `minimumPrice` | Define o preço mínimo em ETH. |
-| `maximumPrice` | Define o preço máximo em ETH. |
-| `tab` | Seleciona `new` ou `trending`; a ausência representa todos os NFTs. |
-| `sort` | Ordena por `price-asc` ou `price-desc`; a ausência representa itens recentes. |
-| `page` | Seleciona a página do catálogo. |
-| `scenario=empty` | Produz um estado vazio determinístico. |
-
-### Cenários determinísticos
-
-Com o servidor de desenvolvimento em execução, os seguintes cenários podem ser acessados diretamente:
-
-| URL | Resultado esperado |
-| --- | --- |
-| `http://localhost:5173/` | Primeira página do catálogo, com 9 dos 12 NFTs. |
-| `http://localhost:5173/?page=2` | Segunda página do catálogo, com os 3 NFTs restantes. |
-| `http://localhost:5173/?q=ape` | Busca textual por nome, criador ou coleção. |
-| `http://localhost:5173/?q=maya` | NFTs associados à criadora Maya K. |
-| `http://localhost:5173/?categories=generative` | NFTs da categoria generativa. |
-| `http://localhost:5173/?categories=generative,collectibles` | NFTs generativos ou colecionáveis. |
-| `http://localhost:5173/?network=ethereum` | NFTs publicados na rede Ethereum. |
-| `http://localhost:5173/?categories=generative,collectibles&network=ethereum` | Categorias combinadas com a rede Ethereum. |
-| `http://localhost:5173/?minimumPrice=0.5&maximumPrice=2` | NFTs entre 0,5 e 2 ETH. |
-| `http://localhost:5173/?categories=photography&network=ethereum` | Estado vazio produzido por filtros sem correspondência. |
-| `http://localhost:5173/?tab=new` | Seis NFTs publicados entre 7 e 12 de outubro de 2026. |
-| `http://localhost:5173/?tab=trending` | Seis NFTs marcados como itens em alta. |
-| `http://localhost:5173/?tab=trending&network=ethereum` | Itens em alta publicados na rede Ethereum. |
-| `http://localhost:5173/?sort=price-asc` | Catálogo ordenado do menor para o maior preço. |
-| `http://localhost:5173/?sort=price-desc` | Catálogo ordenado do maior para o menor preço. |
-| `http://localhost:5173/?categories=generative,collectibles&sort=price-asc` | Categorias combinadas e ordenadas por preço crescente. |
-| `http://localhost:5173/?q=nao-existe` | Estado vazio produzido por uma busca sem resultados. |
-| `http://localhost:5173/?scenario=empty` | Estado vazio após a latência simulada. |
-| `http://localhost:5173/nfts/nft-aurora-ape` | Página de detalhes de um NFT existente. |
-| `http://localhost:5173/nfts/nft-inexistente` | Estado de NFT não encontrado após uma resposta `404`. |
-
-Em telas mobile, a busca e o drawer de filtros atualizam os parâmetros da URL. No desktop, uma sidebar permite combinar categorias, rede e faixa de preço.
-
-O filtro de categorias aceita múltiplas opções. As categorias são combinadas com lógica OR, enquanto categorias, rede, preço e busca são combinados entre si com lógica AND.
-
-O TanStack Router valida `page`, `q`, `categories`, `network`, `minimumPrice`, `maximumPrice`, `tab`, `sort` e `scenario`. Categorias inválidas ou repetidas são eliminadas, e valores padrão como `tab=all` e `sort=recent` são omitidos para manter URLs canônicas. O TanStack Query inclui o estado validado na chave do cache, e o Axios encaminha os parâmetros para a API.
-
-O MSW aplica busca, filtros e aba; em seguida ordena o conjunto resultante e somente então divide a resposta em páginas de 9 itens. Essa ordem impede que a ordenação produza páginas incompletas ou inconsistentes.
-
-O parâmetro da primeira página é omitido para manter a URL canônica: `/` representa a página 1 e `/?page=2` representa a página 2. Os controles de paginação preservam os demais filtros durante a navegação.
-
-Requisições de navegação e assets comuns passam pelo MSW sem avisos. Chamadas inesperadas de API e outros frames de rede continuam produzindo avisos no console para não ocultar falhas de integração.
-
-O fluxo atual é:
-
-```text
-URL → TanStack Router → TanStack Query → Axios → MSW → fixtures
-```
-
-Os cards usam links tipados do TanStack Router. Na página dinâmica, o parâmetro `nftId` participa da chave do TanStack Query, mantendo o cache de cada NFT independente. A interface diferencia carregamento, item inexistente e falha genérica de conexão.
-
-Quando uma navegação substitui uma consulta ainda em andamento, o `AbortSignal` fornecido pelo TanStack Query é encaminhado ao Axios para cancelar a requisição obsoleta.
-
-Autenticação, carteiras, pagamentos e eventos em tempo real ainda serão simulados. O projeto não realizará transações reais nem dependerá de blockchain, extensões de carteira ou gateways de pagamento.
+- Página do carrinho e edição de seus itens.
+- Login, cadastro e persistência de sessão.
+- Favoritos protegidos por autenticação.
+- Checkout, pagamento simulado e confirmação.
+- Perfil e gerenciamento de carteiras.
+- Atualizações de estoque com Socket.IO.
+- Testes E2E e regressão visual com Playwright.
+- Auditoria e documentação do Lighthouse.
+- Deploy público.
 
 ## Qualidade
 
-A base atual é validada com:
+A base atual é validada continuamente com:
 
 ```bash
 npm run lint
 npm run build
 ```
 
-Os testes E2E, a regressão visual e os resultados do Lighthouse serão documentados durante as próximas etapas da implementação.
-
 ## Desenvolvimento assistido por IA
 
-Este projeto foi desenvolvido com apoio do OpenAI Codex para planejamento técnico, geração e revisão incremental de código, depuração e documentação.
+Este projeto foi desenvolvido com apoio do OpenAI Codex para planejamento técnico, implementação incremental, revisão de código, depuração e documentação.
 
-As decisões de arquitetura, priorização, validação funcional e responsabilidade pela entrega permaneceram com o autor.
+As decisões de arquitetura, priorização, validação funcional e responsabilidade pela entrega permanecem com o autor.

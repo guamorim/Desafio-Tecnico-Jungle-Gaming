@@ -3,9 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { HomeHero } from "@/components/home/home-hero";
+import { FeaturedNftCard } from "@/components/home/featured-nft-card";
+import { HomeEditorialSections } from "@/components/home/home-editorial-sections";
 import { DesktopHomeHeader } from "@/components/layout/desktop-home-header";
 import { MobileHomeHeader } from "@/components/layout/mobile-home-header";
 import { Button } from "@/components/ui/button";
+import { getGuestOwnerId } from "@/features/cart/guest-owner";
+import { cartQueryOptions } from "@/features/cart/queries/cart-query";
 import type {
   NftCatalogSort,
   NftCatalogTab,
@@ -33,6 +37,11 @@ function HomePage() {
   const catalogSearch = Route.useSearch();
   const navigate = Route.useNavigate();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [cartOwnerId] = useState(getGuestOwnerId);
+
+  const { data: cart } = useQuery(
+    cartQueryOptions(cartOwnerId),
+  );
 
   const {
     data,
@@ -42,6 +51,12 @@ function HomePage() {
   } = useQuery(
     nftListQueryOptions(catalogSearch),
   );
+
+  const cartItemCount =
+    cart?.items.reduce(
+      (total, item) => total + item.quantity,
+      0,
+    ) ?? 0;
 
   function handleSearchSubmit(searchValue: string) {
     const normalizedSearch = searchValue
@@ -168,6 +183,7 @@ function HomePage() {
     <main className="min-h-svh bg-background text-foreground">
       <DesktopHomeHeader
         key={`desktop-${catalogSearch.q ?? ""}`}
+        cartItemCount={cartItemCount}
         initialSearchValue={catalogSearch.q ?? ""}
         onSearchSubmit={handleSearchSubmit}
       />
@@ -232,10 +248,16 @@ function HomePage() {
           tabIndex={0}
         >
           <div className="grid items-start gap-8 md:grid-cols-[14rem_minmax(0,1fr)] lg:grid-cols-[16rem_minmax(0,1fr)]">
-            <DesktopCatalogFilters
-              search={catalogSearch}
-              onApply={handleApplyFilters}
-            />
+            <aside
+              aria-label="Filtros e NFT em destaque"
+              className="hidden space-y-6 md:block"
+            >
+              <DesktopCatalogFilters
+                search={catalogSearch}
+                onApply={handleApplyFilters}
+              />
+              <FeaturedNftCard />
+            </aside>
 
             <div className="min-w-0">
               {catalogContent}
@@ -243,6 +265,8 @@ function HomePage() {
           </div>
         </div>
       </section>
+
+      <HomeEditorialSections />
     </main>
   );
 }

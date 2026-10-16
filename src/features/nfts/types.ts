@@ -19,10 +19,35 @@ export type NftSummary = {
   readonly version: number;
 };
 
-export type NftDetail = NftSummary & {
-  readonly description: string;
-  readonly gallery: readonly string[];
+export type NftEdition = {
+  readonly id: string;
+  readonly name: string;
+  readonly priceEth: string;
+  readonly availableQuantity: number;
   readonly maximumPurchaseQuantity: number;
+  readonly version: number;
+};
+
+export type NftReview = {
+  readonly id: string;
+  readonly authorName: string;
+  readonly comment: string;
+  readonly createdAt: string;
+  readonly rating: number;
+};
+
+export type NftDetail = NftSummary & {
+  readonly attributes: readonly string[];
+  readonly contractAddress: string;
+  readonly description: string;
+  readonly editions: readonly NftEdition[];
+  readonly gallery: readonly string[];
+  readonly rating: string;
+  readonly relatedNfts: readonly NftSummary[];
+  readonly reviewCount: number;
+  readonly reviews: readonly NftReview[];
+  readonly royaltyPercentage: string;
+  readonly tokenId: string;
 };
 
 export type PaginationMeta = {

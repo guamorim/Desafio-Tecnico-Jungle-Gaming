@@ -1,7 +1,20 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Heart,
+  Share2,
+  Star,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 
 import type { NftDetail } from "../types";
+import { NftDetailTabs } from "./nft-detail-tabs";
+import { NftEditionPurchasePanel } from "./nft-edition-purchase-panel";
+import { NftGallery } from "./nft-gallery";
+import { RelatedNfts } from "./related-nfts";
 
 type NftDetailContentProps = {
   readonly nft: NftDetail;
@@ -10,84 +23,196 @@ type NftDetailContentProps = {
 export function NftDetailContent({
   nft,
 }: NftDetailContentProps) {
+  const initialEdition =
+    nft.editions.find(
+      (edition) =>
+        edition.name === "1/50" &&
+        edition.availableQuantity > 0,
+    ) ??
+    nft.editions.find(
+      (edition) => edition.availableQuantity > 0,
+    ) ??
+    nft.editions[0];
+  const [selectedEditionId, setSelectedEditionId] =
+    useState(initialEdition?.id ?? "");
+  const [showFavoriteNotice, setShowFavoriteNotice] =
+    useState(false);
+  const [shareMessage, setShareMessage] =
+    useState("");
+
+  async function handleCopyNftLink() {
+    try {
+      await navigator.clipboard.writeText(
+        window.location.href,
+      );
+      setShareMessage("Link do NFT copiado.");
+    } catch {
+      setShareMessage(
+        "Não foi possível copiar o link automaticamente.",
+      );
+    }
+  }
+
+  const metadata = (
+    <div className="space-y-4">
+      <dl className="space-y-3 text-sm text-muted-foreground md:space-y-2">
+        <div className="flex flex-wrap gap-2">
+          <dt>ID do token:</dt>
+          <dd>{nft.tokenId}</dd>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <dt>Coleção:</dt>
+          <dd>{nft.collectionName}</dd>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <dt>Atributos:</dt>
+          <dd>{nft.attributes.join(", ")}</dd>
+        </div>
+      </dl>
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        title="Copiar link do NFT"
+        className="px-0"
+        onClick={() => void handleCopyNftLink()}
+      >
+        {shareMessage === "Link do NFT copiado." ? (
+          <Check aria-hidden="true" />
+        ) : (
+          <Share2 aria-hidden="true" />
+        )}
+        Copiar link do NFT
+      </Button>
+
+      {shareMessage && (
+        <p
+          role="status"
+          className="text-xs text-primary"
+        >
+          {shareMessage}
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <section
-      className="py-8 md:py-12"
+      className="py-4 md:py-8"
       aria-labelledby="nft-detail-title"
     >
-      <Link
-        to="/"
-        className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      <nav
+        aria-label="Navegação estrutural"
+        className="mb-5 hidden text-sm font-semibold md:flex md:gap-2"
       >
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        Voltar ao mercado
-      </Link>
+        <Link
+          to="/"
+          search={{}}
+          className="outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Início
+        </Link>
+        <span aria-hidden="true">/</span>
+        <Link
+          to="/"
+          search={{}}
+          hash="catalog"
+          className="outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Mercado
+        </Link>
+      </nav>
 
-      <div className="grid gap-8 md:grid-cols-2 md:items-start lg:gap-14">
-        <div className="aspect-square overflow-hidden rounded-3xl border bg-muted">
-          <img
-            src={nft.gallery[0] ?? nft.imageUrl}
-            alt={`Obra ${nft.name}`}
-            width={960}
-            height={960}
-            decoding="async"
-            fetchPriority="high"
-            className="size-full object-cover"
-          />
+      <div className="relative -mx-3 overflow-hidden rounded-[2rem] bg-card md:mx-0 md:overflow-visible md:rounded-none md:bg-transparent">
+        <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between p-4 md:hidden">
+          <Link
+            to="/"
+            search={{}}
+            aria-label="Voltar ao mercado"
+            className="grid size-9 place-items-center rounded-full border border-primary/20 bg-background/65 text-primary backdrop-blur outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" />
+          </Link>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Favoritar NFT — requer login"
+            title="Entre para favoritar"
+            className="rounded-full border border-primary/20 bg-background/65 text-primary backdrop-blur"
+            onClick={() => setShowFavoriteNotice(true)}
+          >
+            <Heart aria-hidden="true" />
+          </Button>
         </div>
 
-        <div className="space-y-8 md:sticky md:top-8">
-          <header className="space-y-3">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
-              {nft.collectionName}
-            </p>
+        <div className="md:grid md:grid-cols-[minmax(0,1.05fr)_minmax(21rem,0.95fr)] md:items-start md:gap-8 lg:gap-12">
+          <NftGallery
+            editions={nft.editions}
+            images={nft.gallery}
+            nftName={nft.name}
+            selectedEditionId={selectedEditionId}
+            onEditionChange={setSelectedEditionId}
+          />
 
-            <h1
-              id="nft-detail-title"
-              className="text-4xl font-semibold tracking-tight sm:text-5xl"
+          <div className="relative -mt-8 space-y-5 rounded-t-[2rem] bg-card p-5 md:sticky md:top-6 md:mt-0 md:space-y-6 md:rounded-none md:bg-transparent md:p-0">
+            <header className="flex items-start justify-between gap-4">
+              <h1
+                id="nft-detail-title"
+                className="text-xl font-bold tracking-tight md:text-3xl"
+              >
+                {nft.name}
+              </h1>
+
+              <div className="flex shrink-0 items-center gap-1 rounded-full border border-primary px-2 py-1 text-xs md:text-sm">
+                <Star
+                  aria-hidden="true"
+                  className="size-3 fill-primary text-primary md:size-4"
+                />
+                <span>{nft.rating}</span>
+                <span className="text-muted-foreground">
+                  ({nft.reviewCount})
+                </span>
+              </div>
+            </header>
+
+            <div className="space-y-2">
+              <h2 className="hidden font-semibold md:block">
+                Sobre este NFT:
+              </h2>
+              <p className="leading-7 text-muted-foreground">
+                {nft.description}
+              </p>
+            </div>
+
+            <NftEditionPurchasePanel
+              nftId={nft.id}
+              editions={nft.editions}
+              selectedEditionId={selectedEditionId}
+              onEditionChange={setSelectedEditionId}
+              onFavorite={() =>
+                setShowFavoriteNotice(true)
+              }
             >
-              {nft.name}
-            </h1>
+              {metadata}
+            </NftEditionPurchasePanel>
 
-            <p className="text-muted-foreground">
-              Criado por {nft.creatorName}
-            </p>
-          </header>
-
-          <p className="max-w-prose leading-7 text-muted-foreground">
-            {nft.description}
-          </p>
-
-          <dl className="grid grid-cols-2 gap-4 border-y py-6">
-            <div className="space-y-1">
-              <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                Rede
-              </dt>
-              <dd className="font-medium capitalize">
-                {nft.network}
-              </dd>
-            </div>
-
-            <div className="space-y-1">
-              <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                Disponibilidade
-              </dt>
-              <dd className="font-medium">
-                {nft.availableQuantity} unidades
-              </dd>
-            </div>
-          </dl>
-
-          <div className="rounded-2xl border bg-card p-5">
-            <p className="text-sm text-muted-foreground">
-              Preço inicial
-            </p>
-            <p className="mt-1 text-3xl font-semibold text-primary">
-              {nft.startingPriceEth} ETH
-            </p>
+            {showFavoriteNotice && (
+              <p
+                role="status"
+                className="text-sm text-primary"
+              >
+                Entre na sua conta para favoritar este NFT.
+              </p>
+            )}
           </div>
         </div>
       </div>
+
+      <NftDetailTabs nft={nft} />
+      <RelatedNfts nfts={nft.relatedNfts} />
     </section>
   );
 }

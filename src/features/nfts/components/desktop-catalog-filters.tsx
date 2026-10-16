@@ -54,11 +54,10 @@ export function DesktopCatalogFilters({
   }
 
   return (
-    <aside
+    <div
       aria-label="Filtros do catálogo"
-      className="hidden md:block"
     >
-      <div className="sticky top-6 space-y-8 rounded-xl bg-card p-5">
+      <div className="space-y-8 rounded-xl bg-card p-5">
         <section
           aria-labelledby="desktop-category-title"
           className="space-y-3"
@@ -258,6 +257,6 @@ export function DesktopCatalogFilters({
           </ul>
         </section>
       </div>
-    </aside>
+    </div>
   );
 }
