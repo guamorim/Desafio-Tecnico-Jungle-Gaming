@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { HomeHero } from "@/components/home/home-hero";
+import { DesktopHomeHeader } from "@/components/layout/desktop-home-header";
 import { MobileHomeHeader } from "@/components/layout/mobile-home-header";
 import { Button } from "@/components/ui/button";
 import type {
@@ -165,6 +166,12 @@ function HomePage() {
 
   return (
     <main className="min-h-svh bg-background text-foreground">
+      <DesktopHomeHeader
+        key={`desktop-${catalogSearch.q ?? ""}`}
+        initialSearchValue={catalogSearch.q ?? ""}
+        onSearchSubmit={handleSearchSubmit}
+      />
+
       <MobileHomeHeader
         key={catalogSearch.q ?? ""}
         initialSearchValue={catalogSearch.q ?? ""}

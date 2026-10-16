@@ -1,4 +1,7 @@
-import type { NftSummary } from "@/features/nfts/types";
+import type {
+  NftDetail,
+  NftSummary,
+} from "@/features/nfts/types";
 
 export const nftFixtures = [
   {
@@ -182,3 +185,15 @@ export const nftFixtures = [
     version: 1,
   },
 ] as const satisfies readonly NftSummary[];
+
+export const nftDetailFixtures = nftFixtures.map(
+  (nft) => ({
+    ...nft,
+    description: `${nft.name} é uma obra da coleção ${nft.collectionName}, criada por ${nft.creatorName}.`,
+    gallery: [nft.imageUrl],
+    maximumPurchaseQuantity: Math.min(
+      nft.availableQuantity,
+      5,
+    ),
+  }),
+) satisfies readonly NftDetail[];

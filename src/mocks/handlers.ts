@@ -10,7 +10,10 @@ import type {
   ListNftsResponse,
   NftSummary,
 } from "@/features/nfts/types";
-import { nftFixtures } from "./fixtures/nfts";
+import {
+  nftDetailFixtures,
+  nftFixtures,
+} from "./fixtures/nfts";
 
 const pageSize = 9;
 const newReleaseCutoff = Date.parse(
@@ -248,4 +251,24 @@ export const handlers = [
       paginateNfts(sortedNfts, page),
     );
   }),
+  http.get(
+    "/api/nfts/:nftId",
+    async ({ params }) => {
+      await delay(500);
+
+      const nftId = String(params.nftId);
+      const nft = nftDetailFixtures.find(
+        (item) => item.id === nftId,
+      );
+
+      if (!nft) {
+        return HttpResponse.json(
+          { message: "NFT não encontrado." },
+          { status: 404 },
+        );
+      }
+
+      return HttpResponse.json(nft);
+    },
+  ),
 ];

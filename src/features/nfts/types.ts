@@ -19,6 +19,12 @@ export type NftSummary = {
   readonly version: number;
 };
 
+export type NftDetail = NftSummary & {
+  readonly description: string;
+  readonly gallery: readonly string[];
+  readonly maximumPurchaseQuantity: number;
+};
+
 export type PaginationMeta = {
   readonly page: number;
   readonly pageSize: number;

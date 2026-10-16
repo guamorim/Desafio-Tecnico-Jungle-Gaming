@@ -4,7 +4,7 @@ Marketplace de NFTs desenvolvido como solução para o [desafio frontend da Jung
 
 O projeto tem como objetivo implementar os fluxos de descoberta, compra e gerenciamento da conta de um colecionador, com dados simulados, suporte a desktop e mobile e atenção a acessibilidade, performance e qualidade das interações.
 
-> Status: em desenvolvimento. A fundação da aplicação e o catálogo responsivo estão configurados com hero adaptável, busca, filtros, multiseleção de categorias, abas, ordenação e paginação sincronizados com a URL, Axios, TanStack Query, MSW e componentes React tipados.
+> Status: em desenvolvimento. A fundação da aplicação, o catálogo responsivo e a primeira versão da página de detalhes estão configurados com busca, filtros, multiseleção de categorias, abas, ordenação, paginação, rotas tipadas, estados de carregamento e tratamento de erros.
 
 ## Tecnologias configuradas
 
@@ -73,7 +73,9 @@ O Vite exibirá no terminal o endereço local da aplicação.
 │   │   ├── home/
 │   │   │   └── home-hero.tsx      # Hero responsivo da página inicial
 │   │   ├── layout/
-│   │   │   └── mobile-home-header.tsx
+│   │   │   ├── desktop-home-header.tsx
+│   │   │   ├── mobile-home-header.tsx
+│   │   │   └── page-container.tsx
 │   │   └── ui/
 │   │       ├── button.tsx          # Botão gerado pelo shadcn/ui
 │   │       ├── sheet.tsx           # Drawer acessível do shadcn/ui
@@ -81,18 +83,23 @@ O Vite exibirá no terminal o endereço local da aplicação.
 │   ├── features/
 │   │   └── nfts/
 │   │       ├── api/
+│   │       │   ├── get-nft.ts     # Requisição de um NFT por ID
 │   │       │   └── list-nfts.ts   # Requisição do catálogo
 │   │       ├── components/
 │   │       │   ├── category-multiselect.tsx
 │   │       │   ├── desktop-catalog-filters.tsx
 │   │       │   ├── mobile-catalog-filters.tsx
 │   │       │   ├── nft-card.tsx   # Card apresentacional de NFT
+│   │       │   ├── nft-detail-content.tsx
+│   │       │   ├── nft-detail-error.tsx
+│   │       │   ├── nft-detail-skeleton.tsx
 │   │       │   ├── nft-catalog-empty-state.tsx
 │   │       │   ├── nft-catalog-pagination.tsx
 │   │       │   ├── nft-catalog-skeleton.tsx
 │   │       │   ├── nft-catalog-sort.tsx
 │   │       │   └── nft-catalog-tabs.tsx
 │   │       ├── queries/
+│   │       │   ├── nft-detail-query.ts
 │   │       │   └── nft-list-query.ts
 │   │       ├── catalog-filters.ts  # Opções e limites dos filtros
 │   │       ├── catalog-search.ts   # Estado e validação da URL
@@ -109,7 +116,9 @@ O Vite exibirá no terminal o endereço local da aplicação.
 │   │   └── handlers.ts            # Endpoints simulados
 │   ├── routes/
 │   │   ├── __root.tsx
-│   │   └── index.tsx
+│   │   ├── index.tsx
+│   │   └── nfts/
+│   │       └── $nftId.tsx         # Página dinâmica de detalhes
 │   ├── index.css
 │   ├── main.tsx
 │   └── routeTree.gen.ts
@@ -134,15 +143,18 @@ Somente o valor exato `false` desabilita os mocks. Variáveis expostas ao códig
 
 ## Dados simulados
 
-O endpoint disponível atualmente é:
+Os endpoints disponíveis atualmente são:
 
 ```text
 GET /api/nfts
+GET /api/nfts/:nftId
 ```
 
 Ele devolve uma lista determinística de 12 NFTs e aceita busca textual, multiseleção de categorias, rede, preço mínimo, preço máximo, abas, ordenação e paginação. Uma latência simulada de 500 ms permite observar o estado de carregamento da interface.
 
 Cada NFT possui uma data fixa em `listedAt` e um indicador público `isTrending`. Esses dados mantêm as abas e a ordenação reproduzíveis independentemente do relógio do ambiente.
+
+O endpoint de detalhes procura o NFT pelo identificador, acrescenta descrição, galeria e limite de compra e devolve `404` quando o item não existe. A latência simulada também permite validar o skeleton da página acessada diretamente.
 
 A rota inicial apresenta os itens em cards semânticos e em um grid mobile-first de uma a três colunas. As imagens são servidas localmente em WebP para manter a demonstração independente de serviços externos.
 
@@ -184,6 +196,8 @@ Com o servidor de desenvolvimento em execução, os seguintes cenários podem se
 | `http://localhost:5173/?categories=generative,collectibles&sort=price-asc` | Categorias combinadas e ordenadas por preço crescente. |
 | `http://localhost:5173/?q=nao-existe` | Estado vazio produzido por uma busca sem resultados. |
 | `http://localhost:5173/?scenario=empty` | Estado vazio após a latência simulada. |
+| `http://localhost:5173/nfts/nft-aurora-ape` | Página de detalhes de um NFT existente. |
+| `http://localhost:5173/nfts/nft-inexistente` | Estado de NFT não encontrado após uma resposta `404`. |
 
 Em telas mobile, a busca e o drawer de filtros atualizam os parâmetros da URL. No desktop, uma sidebar permite combinar categorias, rede e faixa de preço.
 
@@ -203,6 +217,8 @@ O fluxo atual é:
 URL → TanStack Router → TanStack Query → Axios → MSW → fixtures
 ```
 
+Os cards usam links tipados do TanStack Router. Na página dinâmica, o parâmetro `nftId` participa da chave do TanStack Query, mantendo o cache de cada NFT independente. A interface diferencia carregamento, item inexistente e falha genérica de conexão.
+
 Quando uma navegação substitui uma consulta ainda em andamento, o `AbortSignal` fornecido pelo TanStack Query é encaminhado ao Axios para cancelar a requisição obsoleta.
 
 Autenticação, carteiras, pagamentos e eventos em tempo real ainda serão simulados. O projeto não realizará transações reais nem dependerá de blockchain, extensões de carteira ou gateways de pagamento.
@@ -217,3 +233,9 @@ npm run build
 ```
 
 Os testes E2E, a regressão visual e os resultados do Lighthouse serão documentados durante as próximas etapas da implementação.
+
+## Desenvolvimento assistido por IA
+
+Este projeto foi desenvolvido com apoio do OpenAI Codex para planejamento técnico, geração e revisão incremental de código, depuração e documentação.
+
+As decisões de arquitetura, priorização, validação funcional e responsabilidade pela entrega permaneceram com o autor.
