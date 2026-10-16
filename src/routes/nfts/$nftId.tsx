@@ -4,6 +4,7 @@ import { isAxiosError } from "axios";
 
 import { DesktopDetailHeader } from "@/components/layout/desktop-detail-header";
 import { PageContainer } from "@/components/layout/page-container";
+import { useAuth } from "@/features/auth/use-auth";
 import { cartQueryOptions } from "@/features/cart/queries/cart-query";
 import { useCartOwnerId } from "@/features/cart/use-cart-owner-id";
 import { restoreMocking } from "@/mocks/enable-mocking";
@@ -20,6 +21,7 @@ export const Route = createFileRoute(
 
 function NftDetailPage() {
   const { nftId } = Route.useParams();
+  const { session, isSessionPending } = useAuth();
   const cartOwnerId = useCartOwnerId();
   const { data: cart } = useQuery(
     cartQueryOptions(cartOwnerId),
@@ -29,7 +31,13 @@ function NftDetailPage() {
     error,
     isPending,
     refetch,
-  } = useQuery(nftDetailQueryOptions(nftId));
+  } = useQuery({
+    ...nftDetailQueryOptions(
+      nftId,
+      session?.user.id ?? null,
+    ),
+    enabled: !isSessionPending,
+  });
 
   const cartItemCount = cart?.totalQuantity ?? 0;
 

@@ -10,6 +10,7 @@ import {
   calculateEthPercentage,
   calculateEthTotal,
 } from "@/features/cart/cart-totals";
+import { createUserCartOwnerId } from "@/features/cart/cart-owner-id";
 import type {
   AddCartItemInput,
   ApplyCartCouponInput,
@@ -19,14 +20,20 @@ import type {
   UpdateCartItemInput,
 } from "@/features/cart/types";
 import type {
+  FavoriteNftsResponse,
   ListNftsResponse,
   NftDetail,
   NftSummary,
 } from "@/features/nfts/types";
-import { authHandlers } from "./auth-handlers";
+import {
+  authHandlers,
+  findAuthenticatedUser,
+  readBearerToken,
+} from "./auth-handlers";
 import {
   getMockDatabase,
   saveMockCart,
+  saveMockFavorites,
 } from "./mock-database";
 import { findMockCoupon } from "./fixtures/coupons";
 
@@ -216,6 +223,52 @@ function matchesNftFilters(
   );
 }
 
+function getAuthenticatedUserId(request: Request) {
+  const token = readBearerToken(request);
+  const authenticated = token
+    ? findAuthenticatedUser(token)
+    : null;
+
+  return authenticated?.user.id ?? null;
+}
+
+function shouldFailFavoriteMutation() {
+  return (
+    typeof localStorage !== "undefined" &&
+    localStorage.getItem(
+      "jungle-nft-marketplace:mock-favorite-error",
+    ) === "true"
+  );
+}
+
+function withFavoriteState(
+  nft: NftSummary,
+  userId: string | null,
+): NftSummary {
+  const favoriteIds = userId
+    ? getMockDatabase().favorites[userId] ?? []
+    : [];
+
+  return {
+    ...nft,
+    isFavorite: favoriteIds.includes(nft.id),
+  };
+}
+
+function withDetailFavoriteState(
+  nft: NftDetail,
+  userId: string | null,
+): NftDetail {
+  return {
+    ...nft,
+    isFavorite: withFavoriteState(nft, userId)
+      .isFavorite,
+    relatedNfts: nft.relatedNfts.map((relatedNft) =>
+      withFavoriteState(relatedNft, userId),
+    ),
+  };
+}
+
 function isAddCartItemInput(
   value: unknown,
 ): value is AddCartItemInput {
@@ -283,6 +336,62 @@ function createEmptyCart(ownerId: string): Cart {
     couponCode: null,
     version: 0,
   };
+}
+
+function mergeCartItems(
+  guestCart: Cart,
+  userCart: Cart,
+  nfts: readonly NftDetail[],
+) {
+  const mergedItems = [...userCart.items];
+
+  for (const guestItem of guestCart.items) {
+    const nft = nfts.find(
+      (candidate) => candidate.id === guestItem.nftId,
+    );
+    const edition = nft?.editions.find(
+      (candidate) =>
+        candidate.id === guestItem.editionId,
+    );
+
+    if (!edition) {
+      continue;
+    }
+
+    const currentIndex = mergedItems.findIndex(
+      (item) => item.id === guestItem.id,
+    );
+    const currentItem =
+      currentIndex >= 0
+        ? mergedItems[currentIndex]
+        : undefined;
+    const purchaseLimit = Math.min(
+      edition.availableQuantity,
+      edition.maximumPurchaseQuantity,
+    );
+    const quantity = Math.min(
+      (currentItem?.quantity ?? 0) +
+        guestItem.quantity,
+      purchaseLimit,
+    );
+
+    if (quantity <= 0) {
+      continue;
+    }
+
+    const mergedItem = {
+      ...guestItem,
+      quantity,
+    } satisfies CartItem;
+
+    if (currentIndex >= 0) {
+      mergedItems[currentIndex] = mergedItem;
+    } else {
+      mergedItems.push(mergedItem);
+    }
+  }
+
+  return mergedItems;
 }
 
 function createCartResponse(
@@ -424,9 +533,10 @@ export const handlers = [
       );
     }
 
-    const matchingNfts = getMockDatabase().nfts.filter(
-      (nft) => matchesNftFilters(nft, filters),
-    );
+    const userId = getAuthenticatedUserId(request);
+    const matchingNfts = getMockDatabase().nfts
+      .filter((nft) => matchesNftFilters(nft, filters))
+      .map((nft) => withFavoriteState(nft, userId));
 
     const sortedNfts = sortNfts(
       matchingNfts,
@@ -439,7 +549,7 @@ export const handlers = [
   }),
   http.get(
     "/api/nfts/:nftId",
-    async ({ params }) => {
+    async ({ params, request }) => {
       await delay(500);
 
       const nftId = String(params.nftId);
@@ -454,7 +564,141 @@ export const handlers = [
         );
       }
 
-      return HttpResponse.json(nft);
+      return HttpResponse.json(
+        withDetailFavoriteState(
+          nft,
+          getAuthenticatedUserId(request),
+        ),
+      );
+    },
+  ),
+  http.get("/api/favorites", async ({ request }) => {
+    await delay(300);
+
+    const userId = getAuthenticatedUserId(request);
+
+    if (!userId) {
+      return HttpResponse.json(
+        { message: "Autenticação necessária." },
+        { status: 401 },
+      );
+    }
+
+    const database = getMockDatabase();
+    const favoriteIds = database.favorites[userId] ?? [];
+    const response = {
+      items: favoriteIds.flatMap((nftId) => {
+        const nft = database.nfts.find(
+          (candidate) => candidate.id === nftId,
+        );
+
+        return nft
+          ? [withFavoriteState(nft, userId)]
+          : [];
+      }),
+    } satisfies FavoriteNftsResponse;
+
+    return HttpResponse.json(response);
+  }),
+  http.post(
+    "/api/favorites/:nftId",
+    async ({ params, request }) => {
+      await delay(400);
+
+      const userId = getAuthenticatedUserId(request);
+
+      if (!userId) {
+        return HttpResponse.json(
+          { message: "Autenticação necessária." },
+          { status: 401 },
+        );
+      }
+
+      if (shouldFailFavoriteMutation()) {
+        return HttpResponse.json(
+          {
+            message:
+              "Falha simulada ao atualizar o favorito.",
+          },
+          { status: 503 },
+        );
+      }
+
+      const database = getMockDatabase();
+      const nftId = String(params.nftId);
+      const nft = database.nfts.find(
+        (candidate) => candidate.id === nftId,
+      );
+
+      if (!nft) {
+        return HttpResponse.json(
+          { message: "NFT não encontrado." },
+          { status: 404 },
+        );
+      }
+
+      const currentIds = database.favorites[userId] ?? [];
+
+      saveMockFavorites(
+        userId,
+        currentIds.includes(nftId)
+          ? currentIds
+          : [...currentIds, nftId],
+      );
+
+      return HttpResponse.json(
+        withFavoriteState(nft, userId),
+      );
+    },
+  ),
+  http.delete(
+    "/api/favorites/:nftId",
+    async ({ params, request }) => {
+      await delay(400);
+
+      const userId = getAuthenticatedUserId(request);
+
+      if (!userId) {
+        return HttpResponse.json(
+          { message: "Autenticação necessária." },
+          { status: 401 },
+        );
+      }
+
+      if (shouldFailFavoriteMutation()) {
+        return HttpResponse.json(
+          {
+            message:
+              "Falha simulada ao atualizar o favorito.",
+          },
+          { status: 503 },
+        );
+      }
+
+      const database = getMockDatabase();
+      const nftId = String(params.nftId);
+      const nft = database.nfts.find(
+        (candidate) => candidate.id === nftId,
+      );
+
+      if (!nft) {
+        return HttpResponse.json(
+          { message: "NFT não encontrado." },
+          { status: 404 },
+        );
+      }
+
+      saveMockFavorites(
+        userId,
+        (database.favorites[userId] ?? []).filter(
+          (favoriteId) => favoriteId !== nftId,
+        ),
+      );
+
+      return HttpResponse.json({
+        ...withFavoriteState(nft, userId),
+        isFavorite: false,
+      });
     },
   ),
   http.get("/api/cart", async ({ request }) => {
@@ -482,6 +726,81 @@ export const handlers = [
       ),
     );
   }),
+  http.post(
+    "/api/cart/merge",
+    async ({ request }) => {
+      await delay(400);
+
+      const guestOwnerId = request.headers.get(
+        "X-Cart-Owner-Id",
+      );
+      const token = readBearerToken(request);
+      const authenticated = token
+        ? findAuthenticatedUser(token)
+        : null;
+
+      if (!authenticated) {
+        return HttpResponse.json(
+          { message: "Autenticação necessária." },
+          { status: 401 },
+        );
+      }
+
+      if (!guestOwnerId?.startsWith("guest-")) {
+        return HttpResponse.json(
+          {
+            message:
+              "Identidade do carrinho visitante inválida.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const database = getMockDatabase();
+      const userOwnerId = createUserCartOwnerId(
+        authenticated.user.id,
+      );
+      const guestCart =
+        database.carts[guestOwnerId] ??
+        createEmptyCart(guestOwnerId);
+      const userCart =
+        database.carts[userOwnerId] ??
+        createEmptyCart(userOwnerId);
+      const mergedCart = {
+        ...userCart,
+        items: mergeCartItems(
+          guestCart,
+          userCart,
+          database.nfts,
+        ),
+        couponCode:
+          userCart.couponCode ??
+          guestCart.couponCode,
+        version:
+          userCart.version +
+          (guestCart.items.length > 0 ||
+          guestCart.couponCode
+            ? 1
+            : 0),
+      } satisfies Cart;
+      const clearedGuestCart = {
+        ...guestCart,
+        items: [],
+        couponCode: null,
+        version: guestCart.version + 1,
+      } satisfies Cart;
+
+      saveMockCart(mergedCart);
+      saveMockCart(clearedGuestCart);
+
+      return HttpResponse.json(
+        createCartResponse(
+          mergedCart,
+          database.nfts,
+        ),
+      );
+    },
+  ),
   http.post(
     "/api/cart/items",
     async ({ request }) => {

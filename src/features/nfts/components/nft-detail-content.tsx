@@ -9,8 +9,11 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
+import { getFavoriteErrorMessage } from "../favorite-error-message";
 import type { NftDetail } from "../types";
+import { useToggleFavorite } from "../use-toggle-favorite";
 import { NftDetailTabs } from "./nft-detail-tabs";
 import { NftEditionPurchasePanel } from "./nft-edition-purchase-panel";
 import { NftGallery } from "./nft-gallery";
@@ -35,10 +38,9 @@ export function NftDetailContent({
     nft.editions[0];
   const [selectedEditionId, setSelectedEditionId] =
     useState(initialEdition?.id ?? "");
-  const [showFavoriteNotice, setShowFavoriteNotice] =
-    useState(false);
   const [shareMessage, setShareMessage] =
     useState("");
+  const favorite = useToggleFavorite(nft);
 
   async function handleCopyNftLink() {
     try {
@@ -139,12 +141,27 @@ export function NftDetailContent({
             type="button"
             variant="ghost"
             size="icon"
-            aria-label="Favoritar NFT — requer login"
-            title="Entre para favoritar"
+            aria-label={
+              nft.isFavorite
+                ? `Remover ${nft.name} dos favoritos`
+                : `Adicionar ${nft.name} aos favoritos`
+            }
+            aria-pressed={nft.isFavorite}
+            title={
+              nft.isFavorite
+                ? "Remover dos favoritos"
+                : "Adicionar aos favoritos"
+            }
+            disabled={favorite.isPending}
             className="rounded-full border border-primary/20 bg-background/65 text-primary backdrop-blur"
-            onClick={() => setShowFavoriteNotice(true)}
+            onClick={favorite.toggleFavorite}
           >
-            <Heart aria-hidden="true" />
+            <Heart
+              aria-hidden="true"
+              className={cn(
+                nft.isFavorite && "fill-primary",
+              )}
+            />
           </Button>
         </div>
 
@@ -190,21 +207,21 @@ export function NftDetailContent({
             <NftEditionPurchasePanel
               nftId={nft.id}
               editions={nft.editions}
+              isFavorite={nft.isFavorite}
+              isFavoritePending={favorite.isPending}
               selectedEditionId={selectedEditionId}
               onEditionChange={setSelectedEditionId}
-              onFavorite={() =>
-                setShowFavoriteNotice(true)
-              }
+              onFavorite={favorite.toggleFavorite}
             >
               {metadata}
             </NftEditionPurchasePanel>
 
-            {showFavoriteNotice && (
+            {favorite.error && (
               <p
-                role="status"
-                className="text-sm text-primary"
+                role="alert"
+                className="text-sm text-destructive"
               >
-                Entre na sua conta para favoritar este NFT.
+                {getFavoriteErrorMessage(favorite.error)}
               </p>
             )}
           </div>

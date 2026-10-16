@@ -61,3 +61,7 @@ export type ListNftsResponse = {
   readonly items: readonly NftSummary[];
   readonly pagination: PaginationMeta;
 };
+
+export type FavoriteNftsResponse = {
+  readonly items: readonly NftSummary[];
+};

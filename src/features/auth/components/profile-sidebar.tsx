@@ -7,6 +7,7 @@ import {
   UserRound,
   WalletCards,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 type ProfileSidebarProps = {
   readonly isLoggingOut: boolean;
@@ -15,7 +16,6 @@ type ProfileSidebarProps = {
 
 const disabledItems = [
   { label: "Carteiras", icon: WalletCards },
-  { label: "Lista de interesse", icon: Heart },
   { label: "Ofertas", icon: Tag },
   { label: "Arquivos baixados", icon: Download },
   { label: "Suporte", icon: CircleHelp },
@@ -44,6 +44,19 @@ export function ProfileSidebar({
               />
               Dados do perfil
             </span>
+          </li>
+
+          <li>
+            <Link
+              to="/favorites"
+              className="flex items-center gap-2 rounded-md px-3 py-2.5 text-muted-foreground outline-none hover:bg-primary/10 hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Heart
+                className="size-4"
+                aria-hidden="true"
+              />
+              Lista de interesse
+            </Link>
           </li>
 
           {disabledItems.map((item) => {

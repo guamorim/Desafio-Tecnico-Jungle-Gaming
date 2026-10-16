@@ -93,6 +93,7 @@ Rotas atuais:
 ```text
 /                    # Homepage e catálogo
 /cart                # Carrinho e resumo financeiro
+/favorites           # Lista de interesse privada
 /nfts/$nftId         # Detalhes de um NFT
 /profile             # Perfil privado do colecionador
 ```
@@ -106,7 +107,7 @@ O estado foi dividido de acordo com sua origem e duração.
 | Tipo | Responsabilidade | Implementação |
 | --- | --- | --- |
 | Estado da URL | Busca, filtros, abas, ordenação e página | TanStack Router |
-| Estado remoto | Catálogo, detalhes, carrinho, sessão e perfil | TanStack Query |
+| Estado remoto | Catálogo, detalhes, favoritos, carrinho, sessão e perfil | TanStack Query |
 | Estado local | Drawer, modal, aba visual, edição e quantidade | React |
 | Estado persistente do navegador | Identificador anônimo, carrinhos, token e banco mockado | `localStorage` |
 
@@ -145,6 +146,7 @@ O TanStack Query controla:
 - query global de sessão;
 - mutations de login, cadastro, perfil e logout;
 - atualização do cache do carrinho após mutations.
+- atualização otimista dos favoritos com rollback do cache.
 
 O `AbortSignal` recebido pelas query functions é encaminhado ao Axios.
 
@@ -157,8 +159,12 @@ Endpoints atuais:
 ```text
 GET  /api/nfts
 GET  /api/nfts/:nftId
+GET  /api/favorites
+POST /api/favorites/:nftId
+DELETE /api/favorites/:nftId
 GET  /api/cart
 POST /api/cart/items
+POST /api/cart/merge
 PATCH /api/cart/items/:itemId
 DELETE /api/cart/items/:itemId
 DELETE /api/cart/items
@@ -182,6 +188,7 @@ O banco mockado contém:
 ```text
 nfts
 carts por ownerId
+favorites por userId
 users
 sessions por token
 ```
@@ -196,7 +203,13 @@ conta autenticada → user-${userId}
 
 As funções HTTP e mutations recebem o `ownerId` explicitamente. Assim, uma operação iniciada por uma conta mantém o mesmo proprietário mesmo que a sessão mude antes da resposta. Trocas de conta selecionam outra entrada de cache e outro carrinho persistido.
 
+Login e cadastro executam `POST /api/cart/merge` antes de publicar a nova sessão no contexto. O handler aceita apenas uma origem `guest-*`, deriva o destino do token autenticado, combina itens repetidos até o limite atual e transfere o cupom quando a conta ainda não possui um. A origem só é esvaziada depois que o destino foi produzido. Se a transferência falhar, o cliente remove o token recebido e não apresenta autenticação concluída.
+
 O carrinho também é serializado no `localStorage`. A persistência existe apenas para sustentar a demonstração entre recarregamentos; uma API real assumiria essa responsabilidade em produção.
+
+Favoritos pertencem à relação entre usuário e NFT, e não à fixture global do NFT. Os handlers derivam o `userId` do Bearer token e persistem somente os IDs favoritados. Catálogo, detalhes e lista de interesse usam chaves de cache que incluem a identidade do visualizador. Logout, expiração e troca de conta removem o cache privado anterior.
+
+A mutation de favorito cancela refetches concorrentes, captura todas as queries do visualizador, atualiza imediatamente listas, detalhes e favoritos e envia a operação REST. Em caso de erro, `onError` restaura os snapshots; `onSettled` reconcilia o resultado com a API. O cenário determinístico de falha do MSW permite verificar esse rollback no Playwright.
 
 Usuários e sessões seguem a mesma estratégia exclusivamente para permitir cadastro, login e perfil verificáveis sem backend. Senhas não são armazenadas em texto: o Web Crypto deriva hashes PBKDF2 com salt individual. Essa proteção aproxima o contrato de uma API real, mas `localStorage` e um Service Worker não constituem uma fronteira de segurança de produção.
 
@@ -303,7 +316,7 @@ Socket.IO
 
 ### Testes e qualidade
 
-Playwright está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. A suíte possui 26 cenários e produz 52 execuções ao validar os dois projetos.
+Playwright está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. A suíte possui 30 cenários e produz 60 execuções ao validar os dois projetos.
 
 ```text
 home.spec.ts          → carregamento e navegação responsiva
@@ -313,6 +326,7 @@ cart.spec.ts          → itens, quantidades, persistência, cupons e totais
 cart-isolation.spec.ts → visitante, troca de contas, expiração e retomada
 auth.spec.ts          → acesso privado, login, cadastro, sessão e logout
 profile.spec.ts       → dados pessoais e alteração de senha
+favorites.spec.ts     → autenticação, persistência, isolamento e rollback
 ```
 
 Os testes observam a interface e os contratos acessíveis, restringindo seletores ao domínio relevante da página. Isso evita que conteúdo editorial visualmente semelhante seja confundido com resultados do catálogo. Helpers são compartilhados apenas quando representam uma operação de negócio completa, como autenticar uma conta ou adicionar uma edição ao carrinho.

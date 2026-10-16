@@ -8,6 +8,7 @@ import { ChevronLeft } from "lucide-react";
 import { DesktopDetailHeader } from "@/components/layout/desktop-detail-header";
 import { PageContainer } from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/features/auth/use-auth";
 import { CartEmptyState } from "@/features/cart/components/cart-empty-state";
 import { CartPageContent } from "@/features/cart/components/cart-page-content";
 import { CartPageSkeleton } from "@/features/cart/components/cart-page-skeleton";
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/cart")({
 });
 
 function CartPage() {
+  const { session, isSessionPending } = useAuth();
   const cartOwnerId = useCartOwnerId();
   const {
     data: cart,
@@ -31,7 +33,13 @@ function CartPage() {
   const {
     data: catalog,
     isPending: areRecommendationsPending,
-  } = useQuery(nftListQueryOptions());
+  } = useQuery({
+    ...nftListQueryOptions(
+      {},
+      session?.user.id ?? null,
+    ),
+    enabled: !isSessionPending,
+  });
 
   const cartNftIds = new Set(
     cart?.items.map((item) => item.nftId),

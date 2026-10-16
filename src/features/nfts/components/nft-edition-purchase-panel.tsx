@@ -25,6 +25,8 @@ import type { NftEdition } from "../types";
 type NftEditionPurchasePanelProps = {
   readonly children?: ReactNode;
   readonly editions: readonly NftEdition[];
+  readonly isFavorite: boolean;
+  readonly isFavoritePending: boolean;
   readonly nftId: string;
   readonly onEditionChange: (editionId: string) => void;
   readonly onFavorite: () => void;
@@ -34,6 +36,8 @@ type NftEditionPurchasePanelProps = {
 export function NftEditionPurchasePanel({
   children,
   editions,
+  isFavorite,
+  isFavoritePending,
   nftId,
   onEditionChange,
   onFavorite,
@@ -279,10 +283,25 @@ export function NftEditionPurchasePanel({
                 variant="outline"
                 size="lg"
                 className="hidden md:inline-flex"
+                aria-label={
+                  isFavorite
+                    ? "Remover NFT dos favoritos"
+                    : "Adicionar NFT aos favoritos"
+                }
+                aria-pressed={isFavorite}
+                disabled={isFavoritePending}
                 onClick={onFavorite}
               >
-                <Heart aria-hidden="true" />
-                Favoritar
+                <Heart
+                  aria-hidden="true"
+                  className={cn(
+                    isFavorite &&
+                      "fill-primary text-primary",
+                  )}
+                />
+                {isFavorite
+                  ? "Remover favorito"
+                  : "Favoritar"}
               </Button>
             </div>
           </>

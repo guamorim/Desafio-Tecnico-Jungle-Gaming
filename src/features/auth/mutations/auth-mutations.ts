@@ -7,6 +7,12 @@ import {
   clearAuthToken,
   saveAuthToken,
 } from "../auth-token";
+import { mergeGuestCart } from "@/features/cart/api/merge-guest-cart";
+import { createUserCartOwnerId } from "@/features/cart/cart-owner-id";
+import { synchronizeCartCache } from "@/features/cart/cart-cache";
+import { getGuestOwnerId } from "@/features/cart/guest-owner";
+import { cartQueryKey } from "@/features/cart/queries/cart-query";
+import { nftViewerQueryKey } from "@/features/nfts/queries/nft-query-keys";
 import {
   login,
   logout,
@@ -16,7 +22,7 @@ import {
 import { sessionQueryKey } from "../queries/session-query";
 import type { SessionResponse } from "../types";
 
-function synchronizeSession(
+function setSession(
   queryClient: QueryClient,
   response: SessionResponse,
 ) {
@@ -30,14 +36,85 @@ function synchronizeSession(
   );
 }
 
+function removeUserCartCache(
+  queryClient: QueryClient,
+  userId: string,
+) {
+  queryClient.removeQueries({
+    queryKey: cartQueryKey(
+      createUserCartOwnerId(userId),
+    ),
+    exact: true,
+  });
+}
+
+function removePrivateUserCache(
+  queryClient: QueryClient,
+  userId: string,
+) {
+  removeUserCartCache(queryClient, userId);
+  queryClient.removeQueries({
+    queryKey: nftViewerQueryKey(userId),
+  });
+}
+
+async function synchronizeAuthentication(
+  queryClient: QueryClient,
+  response: SessionResponse,
+) {
+  const nextSession = response.session;
+
+  if (!nextSession) {
+    setSession(queryClient, response);
+    return;
+  }
+
+  const previousSession =
+    queryClient.getQueryData<SessionResponse>(
+      sessionQueryKey,
+    )?.session;
+  const guestOwnerId = getGuestOwnerId();
+
+  saveAuthToken(nextSession.token);
+
+  try {
+    const mergedCart = await mergeGuestCart(
+      guestOwnerId,
+    );
+
+    if (
+      previousSession &&
+      previousSession.user.id !==
+        nextSession.user.id
+    ) {
+      removePrivateUserCache(
+        queryClient,
+        previousSession.user.id,
+      );
+    }
+
+    queryClient.removeQueries({
+      queryKey: cartQueryKey(guestOwnerId),
+      exact: true,
+    });
+    synchronizeCartCache(queryClient, mergedCart);
+    queryClient.setQueryData(
+      sessionQueryKey,
+      response,
+    );
+  } catch (error) {
+    clearAuthToken();
+    throw error;
+  }
+}
+
 export function loginMutationOptions(
   queryClient: QueryClient,
 ) {
   return mutationOptions({
     mutationFn: login,
-    onSuccess: (response) => {
-      synchronizeSession(queryClient, response);
-    },
+    onSuccess: (response) =>
+      synchronizeAuthentication(queryClient, response),
   });
 }
 
@@ -46,9 +123,8 @@ export function registerMutationOptions(
 ) {
   return mutationOptions({
     mutationFn: register,
-    onSuccess: (response) => {
-      synchronizeSession(queryClient, response);
-    },
+    onSuccess: (response) =>
+      synchronizeAuthentication(queryClient, response),
   });
 }
 
@@ -58,7 +134,7 @@ export function updateProfileMutationOptions(
   return mutationOptions({
     mutationFn: updateProfile,
     onSuccess: (response) => {
-      synchronizeSession(queryClient, response);
+      setSession(queryClient, response);
     },
   });
 }
@@ -69,6 +145,18 @@ export function logoutMutationOptions(
   return mutationOptions({
     mutationFn: logout,
     onSettled: () => {
+      const currentSession =
+        queryClient.getQueryData<SessionResponse>(
+          sessionQueryKey,
+        )?.session;
+
+      if (currentSession) {
+        removePrivateUserCache(
+          queryClient,
+          currentSession.user.id,
+        );
+      }
+
       clearAuthToken();
 
       queryClient.setQueryData(

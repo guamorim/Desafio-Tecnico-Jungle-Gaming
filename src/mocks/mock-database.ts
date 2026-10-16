@@ -11,6 +11,7 @@ import { mockUserFixtures } from "./fixtures/users";
 type MockDatabase = {
   nfts: NftDetail[];
   carts: Record<string, Cart>;
+  favorites: Record<string, string[]>;
   users: MockUserRecord[];
   sessions: Record<string, MockSessionRecord>;
 };
@@ -24,6 +25,8 @@ const cartsStorageKey =
   "jungle-nft-marketplace:mock-carts:v2";
 const authStorageKey =
   "jungle-nft-marketplace:mock-auth:v1";
+const favoritesStorageKey =
+  "jungle-nft-marketplace:mock-favorites:v1";
 
 function isRecord(
   value: unknown,
@@ -252,6 +255,49 @@ function readPersistedCarts(): Record<string, Cart> {
   }
 }
 
+function readPersistedFavorites(): Record<string, string[]> {
+  if (typeof localStorage === "undefined") {
+    return {};
+  }
+
+  try {
+    const serializedFavorites = localStorage.getItem(
+      favoritesStorageKey,
+    );
+
+    if (!serializedFavorites) {
+      return {};
+    }
+
+    const parsedFavorites: unknown = JSON.parse(
+      serializedFavorites,
+    );
+
+    if (!isRecord(parsedFavorites)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsedFavorites).flatMap(
+        ([userId, nftIds]) => {
+          if (
+            !Array.isArray(nftIds) ||
+            !nftIds.every(
+              (nftId) => typeof nftId === "string",
+            )
+          ) {
+            return [];
+          }
+
+          return [[userId, [...new Set(nftIds)]]];
+        },
+      ),
+    );
+  } catch {
+    return {};
+  }
+}
+
 function persistCarts(carts: Record<string, Cart>) {
   if (typeof localStorage === "undefined") {
     return;
@@ -260,6 +306,19 @@ function persistCarts(carts: Record<string, Cart>) {
   localStorage.setItem(
     cartsStorageKey,
     JSON.stringify(carts),
+  );
+}
+
+function persistFavorites(
+  favorites: Record<string, string[]>,
+) {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(
+    favoritesStorageKey,
+    JSON.stringify(favorites),
   );
 }
 
@@ -282,6 +341,7 @@ function createInitialDatabase(): MockDatabase {
   return structuredClone({
     nfts: nftDetailFixtures,
     carts: readPersistedCarts(),
+    favorites: readPersistedFavorites(),
     users: mergeUsers(persistedAuth.users),
     sessions: persistedAuth.sessions,
   });
@@ -303,6 +363,21 @@ export function saveMockCart(cart: Cart) {
   };
 
   persistCarts(database.carts);
+}
+
+export function saveMockFavorites(
+  userId: string,
+  nftIds: readonly string[],
+) {
+  database = {
+    ...database,
+    favorites: {
+      ...database.favorites,
+      [userId]: [...new Set(nftIds)],
+    },
+  };
+
+  persistFavorites(database.favorites);
 }
 
 export function saveMockUser(user: MockUserRecord) {
@@ -362,6 +437,7 @@ export function resetMockDatabase() {
   if (typeof localStorage !== "undefined") {
     localStorage.removeItem(cartsStorageKey);
     localStorage.removeItem(authStorageKey);
+    localStorage.removeItem(favoritesStorageKey);
   }
 
   database = createInitialDatabase();

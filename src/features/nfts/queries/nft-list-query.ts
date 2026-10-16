@@ -4,12 +4,17 @@ import {
   listNfts,
   type ListNftsParams,
 } from "../api/list-nfts";
+import { nftListQueryKey } from "./nft-query-keys";
 
 export function nftListQueryOptions(
   params: ListNftsParams = {},
+  viewerId: string | null = null,
 ) {
   return queryOptions({
-    queryKey: ["nfts", "list", params] as const,
+    queryKey: [
+      ...nftListQueryKey(viewerId),
+      params,
+    ] as const,
     queryFn: ({ signal }) =>
       listNfts(params, { signal }),
   });

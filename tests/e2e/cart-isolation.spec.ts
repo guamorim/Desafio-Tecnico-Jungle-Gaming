@@ -43,19 +43,18 @@ test.describe("isolamento do carrinho", () => {
     await addAuroraToCart(page);
 
     await loginWithFixture(page);
-    await page.goto("/cart");
+    await expectAuroraQuantity(page, 1);
 
+    await addAuroraToCart(page);
+    await expectAuroraQuantity(page, 2);
+
+    await logout(page);
+    await page.goto("/cart");
     await expect(
       page.getByRole("heading", {
         name: "Seu carrinho está vazio",
       }),
     ).toBeVisible();
-
-    await addAuroraToCart(page, 2);
-    await expectAuroraQuantity(page, 2);
-
-    await logout(page);
-    await expectAuroraQuantity(page, 1);
 
     await loginWithFixture(page);
     await expectAuroraQuantity(page, 2);

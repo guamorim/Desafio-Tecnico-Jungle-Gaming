@@ -9,6 +9,7 @@ import { DesktopHomeHeader } from "@/components/layout/desktop-home-header";
 import { MobileBottomNavigation } from "@/components/layout/mobile-bottom-navigation";
 import { MobileHomeHeader } from "@/components/layout/mobile-home-header";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/features/auth/use-auth";
 import { cartQueryOptions } from "@/features/cart/queries/cart-query";
 import { useCartOwnerId } from "@/features/cart/use-cart-owner-id";
 import { restoreMocking } from "@/mocks/enable-mocking";
@@ -40,6 +41,7 @@ function HomePage() {
   const navigate = Route.useNavigate();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const cartOwnerId = useCartOwnerId();
+  const { session, isSessionPending } = useAuth();
 
   const { data: cart } = useQuery(
     cartQueryOptions(cartOwnerId),
@@ -51,7 +53,13 @@ function HomePage() {
     isError,
     refetch,
   } = useQuery(
-    nftListQueryOptions(catalogSearch),
+    {
+      ...nftListQueryOptions(
+        catalogSearch,
+        session?.user.id ?? null,
+      ),
+      enabled: !isSessionPending,
+    },
   );
 
   const cartItemCount = cart?.totalQuantity ?? 0;

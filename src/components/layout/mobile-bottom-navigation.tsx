@@ -10,6 +10,11 @@ import {
 import { useAuth } from "@/features/auth/use-auth";
 
 type MobileBottomNavigationProps = {
+  readonly activeItem?:
+    | "home"
+    | "favorites"
+    | "cart"
+    | "profile";
   readonly cartItemCount: number;
 };
 
@@ -17,6 +22,7 @@ const navigationItemClassName =
   "relative grid size-11 place-items-center rounded-full text-muted-foreground outline-none transition-colors hover:text-primary focus-visible:ring-2 focus-visible:ring-ring";
 
 export function MobileBottomNavigation({
+  activeItem = "home",
   cartItemCount,
 }: MobileBottomNavigationProps) {
   const { session, openLogin } = useAuth();
@@ -32,21 +38,38 @@ export function MobileBottomNavigation({
           to="/"
           search={{}}
           aria-label="Início"
-          aria-current="page"
-          className={`${navigationItemClassName} text-primary`}
+          aria-current={
+            activeItem === "home" ? "page" : undefined
+          }
+          className={`${navigationItemClassName} ${activeItem === "home" ? "text-primary" : ""}`}
         >
           <Home aria-hidden="true" />
         </Link>
 
-        <button
-          type="button"
-          disabled
-          aria-label="Favoritos — requer autenticação"
-          title="Entre para acessar os favoritos"
-          className={`${navigationItemClassName} cursor-not-allowed`}
-        >
-          <Heart aria-hidden="true" />
-        </button>
+        {isAuthenticated ? (
+          <Link
+            to="/favorites"
+            aria-label="Abrir favoritos"
+            aria-current={
+              activeItem === "favorites"
+                ? "page"
+                : undefined
+            }
+            className={`${navigationItemClassName} ${activeItem === "favorites" ? "text-primary" : ""}`}
+          >
+            <Heart aria-hidden="true" />
+          </Link>
+        ) : (
+          <button
+            type="button"
+            aria-label="Entrar para acessar os favoritos"
+            title="Entre para acessar os favoritos"
+            className={`${navigationItemClassName} cursor-pointer`}
+            onClick={openLogin}
+          >
+            <Heart aria-hidden="true" />
+          </button>
+        )}
 
         <div className="grid place-items-center">
           <span
@@ -59,12 +82,15 @@ export function MobileBottomNavigation({
 
         <Link
           to="/cart"
+          aria-current={
+            activeItem === "cart" ? "page" : undefined
+          }
           aria-label={
             cartItemCount > 0
               ? `Carrinho com ${cartItemCount} unidades`
               : "Carrinho vazio"
           }
-          className={navigationItemClassName}
+          className={`${navigationItemClassName} ${activeItem === "cart" ? "text-primary" : ""}`}
         >
           <ShoppingCart aria-hidden="true" />
 
@@ -84,7 +110,12 @@ export function MobileBottomNavigation({
           <Link
             to="/profile"
             aria-label="Abrir meu perfil"
-            className={navigationItemClassName}
+            aria-current={
+              activeItem === "profile"
+                ? "page"
+                : undefined
+            }
+            className={`${navigationItemClassName} ${activeItem === "profile" ? "text-primary" : ""}`}
           >
             <UserRound aria-hidden="true" />
           </Link>

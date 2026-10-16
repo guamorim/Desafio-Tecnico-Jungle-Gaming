@@ -301,7 +301,7 @@ function validateProfile(
   return errors;
 }
 
-function readBearerToken(request: Request) {
+export function readBearerToken(request: Request) {
   const authorization =
     request.headers.get("Authorization");
 
@@ -322,7 +322,7 @@ async function readRequestBody(request: Request) {
   }
 }
 
-function findAuthenticatedUser(token: string) {
+export function findAuthenticatedUser(token: string) {
   const database = getMockDatabase();
   const storedSession = database.sessions[token];
 

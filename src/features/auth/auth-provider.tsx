@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
   type PropsWithChildren,
 } from "react";
@@ -9,6 +10,9 @@ import {
 } from "@tanstack/react-query";
 
 import { AuthContext } from "./auth-context";
+import { createUserCartOwnerId } from "@/features/cart/cart-owner-id";
+import { cartQueryKey } from "@/features/cart/queries/cart-query";
+import { nftViewerQueryKey } from "@/features/nfts/queries/nft-query-keys";
 import {
   AuthDialog,
   type AuthMode,
@@ -27,6 +31,37 @@ export function AuthProvider({
   );
   const [authMode, setAuthMode] =
     useState<AuthMode | null>(null);
+  const previousUserId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (isPending) {
+      return;
+    }
+
+    const currentUserId =
+      data?.session?.user.id ?? null;
+
+    if (
+      previousUserId.current &&
+      previousUserId.current !== currentUserId
+    ) {
+      queryClient.removeQueries({
+        queryKey: cartQueryKey(
+          createUserCartOwnerId(
+            previousUserId.current,
+          ),
+        ),
+        exact: true,
+      });
+      queryClient.removeQueries({
+        queryKey: nftViewerQueryKey(
+          previousUserId.current,
+        ),
+      });
+    }
+
+    previousUserId.current = currentUserId;
+  }, [data?.session?.user.id, isPending, queryClient]);
 
   useEffect(() => {
     const session = data?.session;

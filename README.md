@@ -6,7 +6,7 @@ A aplicação simula a descoberta e a compra de NFTs com dados determinísticos,
 
 As principais decisões técnicas e os pontos de extensão estão documentados em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-> Status: em desenvolvimento. Homepage, detalhes dos NFTs, carrinho, autenticação e perfil privado estão funcionais e responsivos. Checkout, carteiras e tempo real fazem parte das próximas etapas.
+> Status: em desenvolvimento. Homepage, detalhes dos NFTs, carrinho, autenticação, perfil privado e favoritos estão funcionais e responsivos. Checkout, carteiras e tempo real fazem parte das próximas etapas.
 
 ## Funcionalidades implementadas
 
@@ -53,6 +53,7 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - Identidade estável para visitantes anônimos.
 - Identidade própria para cada conta autenticada.
 - Isolamento entre o carrinho do visitante e os carrinhos de usuários diferentes.
+- Transferência dos itens do visitante para a conta durante login ou cadastro.
 - Retomada do carrinho da conta após expiração da sessão e novo login.
 - Consulta do carrinho com TanStack Query.
 - Inclusão de uma edição pelo painel de compra.
@@ -86,6 +87,16 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - Migração automática de contas armazenadas antes da evolução do modelo.
 - Logout global com limpeza do token e do cache da sessão.
 - Login com Google, Facebook e recuperação de senha exibidos como indisponíveis, pois não fazem parte do backend simulado.
+
+### Favoritos
+
+- Rota privada e responsiva `/favorites` acessível pela navegação mobile e pelo perfil.
+- Consulta, inclusão e remoção por endpoints REST protegidos.
+- Persistência da lista de interesse por usuário no banco mockado.
+- Estado consistente nos cards, nos detalhes e na lista de favoritos.
+- Cache separado pela identidade do visualizador, sem vazamento durante troca de contas.
+- Atualização otimista com restauração do snapshot quando a API falha.
+- Estado vazio, acesso bloqueado para visitantes e erro recuperável.
 
 ## Tecnologias
 
@@ -173,8 +184,9 @@ src/
 │   │   ├── auth-provider.tsx    # Sessão e modal disponíveis em todas as rotas
 │   │   └── types.ts
 │   └── nfts/
-│       ├── api/                 # Catálogo e detalhes
+│       ├── api/                 # Catálogo, detalhes e favoritos
 │       ├── components/          # Filtros, cards, galeria e detalhes
+│       ├── mutations/           # Favorito otimista e rollback
 │       ├── queries/             # Query options do TanStack Query
 │       ├── catalog-filters.ts
 │       ├── catalog-search.ts
@@ -193,6 +205,7 @@ src/
 └── routes/
     ├── __root.tsx               # Layout raiz e rodapé
     ├── cart.tsx                 # Carrinho
+    ├── favorites.tsx            # Lista de interesse privada
     ├── index.tsx                # Homepage
     ├── nfts/$nftId.tsx          # Detalhes de um NFT
     └── profile.tsx              # Perfil privado
@@ -224,8 +237,12 @@ Quando uma consulta é substituída durante a navegação, o `AbortSignal` forne
 ```text
 GET  /api/nfts
 GET  /api/nfts/:nftId
+GET  /api/favorites
+POST /api/favorites/:nftId
+DELETE /api/favorites/:nftId
 GET  /api/cart
 POST /api/cart/items
+POST /api/cart/merge
 PATCH /api/cart/items/:itemId
 DELETE /api/cart/items/:itemId
 DELETE /api/cart/items
@@ -248,9 +265,9 @@ Cupons determinísticos disponíveis para validação manual:
 
 As rotas do carrinho usam o header `X-Cart-Owner-Id`. Para visitantes anônimos, o cliente cria um identificador com `crypto.randomUUID()` e o mantém no `localStorage`. Contas autenticadas usam uma identidade determinística derivada do ID do usuário. Essa mesma identidade compõe a chave de cache do TanStack Query e é enviada explicitamente por cada mutation.
 
-Ao trocar de conta, a aplicação troca também a query do carrinho. Logout e expiração retornam ao carrinho anônimo original; autenticar novamente a mesma conta recupera seu carrinho persistido sem expor os itens de outro usuário.
+Ao autenticar, a API mescla os itens e o cupom do visitante no carrinho da conta, respeita os limites vigentes e esvazia o carrinho anônimo somente depois da transferência. Ao trocar de conta, a aplicação troca também a query do carrinho. Logout e expiração retornam à identidade anônima; autenticar novamente a mesma conta recupera seu carrinho persistido sem expor os itens de outro usuário.
 
-As rotas privadas usam `Authorization: Bearer <token>`. O interceptor do Axios anexa o token automaticamente. Usuários e sessões são persistidos somente no navegador para fins de demonstração; limpar os dados do site restaura as fixtures.
+As rotas privadas usam `Authorization: Bearer <token>`. O interceptor do Axios anexa o token automaticamente. Favoritos são derivados exclusivamente da sessão autenticada e persistidos por `userId`; o cliente não escolhe a conta que será alterada. Usuários e sessões são persistidos somente no navegador para fins de demonstração; limpar os dados do site restaura as fixtures.
 
 Contas determinísticas disponíveis para teste:
 
@@ -338,7 +355,6 @@ Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite 
 
 ## Próximas etapas
 
-- Favoritos protegidos por autenticação.
 - Checkout, pagamento simulado e confirmação.
 - Gerenciamento e conexão mockada de carteiras.
 - Upload e remoção de avatar.
@@ -357,13 +373,14 @@ npm run build
 npm run test:e2e
 ```
 
-A suíte atual possui 26 cenários executados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 52 execuções. Ela cobre:
+A suíte atual possui 30 cenários executados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 60 execuções. Ela cobre:
 
 - carregamento e navegação responsiva da homepage;
 - pesquisa, filtros combinados, ordenação, abas, paginação, histórico e estado vazio do catálogo;
 - troca de edição, indisponibilidade e estado `404` nos detalhes;
 - inclusão, quantidade, persistência, remoção, cupons e totais do carrinho;
 - isolamento do carrinho entre visitante e contas, troca de usuário, expiração e retomada;
+- favoritos autenticados, persistência, isolamento entre contas e rollback otimista;
 - bloqueio de rota privada, login, cadastro, duplicidade, persistência de sessão e logout;
 - edição do perfil, rejeição da senha atual incorreta e troca de senha com novo login.
 
