@@ -3,7 +3,7 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { isAxiosError } from "axios";
+import { Link } from "@tanstack/react-router";
 import {
   Heart,
   Minus,
@@ -11,7 +11,11 @@ import {
   ShoppingCart,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import {
+  Button,
+  buttonVariants,
+} from "@/components/ui/button";
+import { getCartErrorMessage } from "@/features/cart/cart-error-message";
 import { addCartItemMutationOptions } from "@/features/cart/mutations/add-cart-item-mutation";
 import { cn } from "@/lib/utils";
 
@@ -25,17 +29,6 @@ type NftEditionPurchasePanelProps = {
   readonly onFavorite: () => void;
   readonly selectedEditionId: string;
 };
-
-function getCartErrorMessage(error: unknown) {
-  if (
-    isAxiosError<{ message?: string }>(error) &&
-    error.response?.data.message
-  ) {
-    return error.response.data.message;
-  }
-
-  return "Não foi possível adicionar o item ao carrinho.";
-}
 
 export function NftEditionPurchasePanel({
   children,
@@ -259,17 +252,19 @@ export function NftEditionPurchasePanel({
                   : "Comprar NFT"}
               </Button>
 
-              <Button
-                type="button"
-                variant="outline"
-                size="icon-lg"
-                className="rounded-full md:hidden"
-                aria-label="Carrinho — página disponível em breve"
-                title="Carrinho disponível em breve"
-                disabled
+              <Link
+                to="/cart"
+                className={cn(
+                  buttonVariants({
+                    variant: "outline",
+                    size: "icon-lg",
+                  }),
+                  "rounded-full md:hidden",
+                )}
+                aria-label="Abrir carrinho"
               >
                 <ShoppingCart aria-hidden="true" />
-              </Button>
+              </Link>
 
               <Button
                 type="button"
@@ -299,7 +294,10 @@ export function NftEditionPurchasePanel({
             role="alert"
             className="mt-3 text-sm text-destructive"
           >
-            {getCartErrorMessage(addItemMutation.error)}
+            {getCartErrorMessage(
+              addItemMutation.error,
+              "Não foi possível adicionar o item ao carrinho.",
+            )}
           </p>
         )}
       </div>

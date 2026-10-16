@@ -6,7 +6,7 @@ A aplicação simula a descoberta e a compra de NFTs com dados determinísticos,
 
 As principais decisões técnicas e os pontos de extensão estão documentados em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-> Status: em desenvolvimento. A homepage e a interface da página de detalhes estão concluídas. O carrinho já possui contratos, API mockada e persistência, mas sua página dedicada ainda será implementada.
+> Status: em desenvolvimento. Homepage, detalhes dos NFTs e carrinho estão funcionais e responsivos. Autenticação, favoritos protegidos e checkout fazem parte das próximas etapas.
 
 ## Funcionalidades implementadas
 
@@ -39,21 +39,29 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - Preço, estoque e limite de compra próprios para cada edição.
 - Controle de quantidade respeitando disponibilidade e limite.
 - Avaliação agregada e comentários simulados.
-- Metadados de token, coleção e atributos.
+- Descrição, atributos e avaliação próprios para cada NFT.
+- Metadados de token e coleção.
 - Informações de rede, contrato ERC-721 e direitos autorais.
 - Cópia da URL do NFT para a área de transferência.
 - Lista compacta de NFTs da mesma coleção.
 - Layout específico para desktop e mobile.
 
-### Carrinho — fundação
+### Carrinho
 
+- Rota tipada e responsiva `/cart`.
 - Identidade estável para visitantes anônimos.
 - Consulta do carrinho com TanStack Query.
 - Inclusão de uma edição pelo painel de compra.
-- Validação de NFT, edição, quantidade, estoque e limite de compra no MSW.
-- Contador de unidades nos cabeçalhos desktop.
+- Alteração de quantidade, remoção individual e limpeza completa.
+- Validação de NFT, edição, quantidade, estoque e limite no MSW.
+- Subtotal por item, subtotal do carrinho, taxa estimada e total.
+- Cálculos de ETH com inteiros arbitrários, sem erros de ponto flutuante.
+- Skeleton, erro recuperável e estado vazio.
+- Recomendações que excluem NFTs presentes no carrinho.
+- Navegação pelos cabeçalhos desktop e pelo detalhe mobile.
+- Contador de unidades sincronizado nos cabeçalhos desktop.
 - Persistência do banco mockado no `localStorage`.
-- Atualização do cache após uma inclusão bem-sucedida.
+- Atualização do cache após cada mutation bem-sucedida.
 - Mensagens de sucesso e erro na interface.
 
 ## Tecnologias
@@ -119,8 +127,9 @@ src/
 │   └── ui/                      # Componentes do shadcn/ui
 ├── features/
 │   ├── cart/
-│   │   ├── api/                 # Consulta e inclusão no carrinho
-│   │   ├── mutations/           # Mutation do TanStack Query
+│   │   ├── api/                 # Consulta e alterações do carrinho
+│   │   ├── components/          # Página, estados e recomendações
+│   │   ├── mutations/           # Mutations do TanStack Query
 │   │   ├── queries/             # Query e chave do carrinho
 │   │   ├── guest-owner.ts       # Identidade persistida do visitante
 │   │   └── types.ts
@@ -143,6 +152,7 @@ src/
 │   └── mock-database.ts         # Banco mockado persistente
 └── routes/
     ├── __root.tsx               # Layout raiz e rodapé
+    ├── cart.tsx                 # Carrinho
     ├── index.tsx                # Homepage
     └── nfts/$nftId.tsx          # Detalhes de um NFT
 ```
@@ -175,11 +185,14 @@ GET  /api/nfts
 GET  /api/nfts/:nftId
 GET  /api/cart
 POST /api/cart/items
+PATCH /api/cart/items/:itemId
+DELETE /api/cart/items/:itemId
+DELETE /api/cart/items
 ```
 
 As rotas do carrinho usam o header `X-Cart-Owner-Id`. Para visitantes anônimos, o cliente cria um identificador com `crypto.randomUUID()` e o mantém no `localStorage`.
 
-O endpoint de inclusão valida:
+Os endpoints do carrinho validam:
 
 - existência do NFT;
 - existência da edição;
@@ -227,6 +240,7 @@ Com o servidor executando em `http://localhost:5173`:
 | `/?scenario=empty` | Estado vazio forçado pelo MSW. |
 | `/nfts/nft-aurora-ape` | Detalhes, edições e compra do Aurora Ape. |
 | `/nfts/nft-inexistente` | Estado de NFT não encontrado. |
+| `/cart` | Carrinho persistente, edição de itens e resumo financeiro. |
 
 As respostas possuem latência simulada para permitir a inspeção dos skeletons e transições de carregamento.
 
@@ -244,6 +258,7 @@ Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite 
 
 - As imagens são locais e otimizadas em WebP.
 - Os 12 NFTs do catálogo possuem artes próprias em WebP.
+- Os 12 NFTs possuem descrição, atributos e avaliação próprios.
 - Todos os NFTs possuem quatro edições comerciais.
 - Somente o Aurora Ape possui uma imagem diferente para cada edição.
 - Botões editoriais sem fluxo previsto no desafio permanecem apenas apresentacionais.
@@ -251,7 +266,6 @@ Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite 
 
 ## Próximas etapas
 
-- Página do carrinho e edição de seus itens.
 - Login, cadastro e persistência de sessão.
 - Favoritos protegidos por autenticação.
 - Checkout, pagamento simulado e confirmação.

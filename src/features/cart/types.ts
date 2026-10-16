@@ -11,6 +11,11 @@ export type AddCartItemInput = {
   readonly quantity: number;
 };
 
+export type UpdateCartItemInput = {
+  readonly itemId: string;
+  readonly quantity: number;
+};
+
 export type Cart = {
   readonly id: string;
   readonly ownerId: string;
@@ -19,6 +24,7 @@ export type Cart = {
 };
 
 export type CartItemDetails = CartItem & {
+  readonly lineTotalEth: string;
   readonly nft: {
     readonly name: string;
     readonly collectionName: string;
@@ -36,4 +42,6 @@ export type CartItemDetails = CartItem & {
 
 export type CartResponse = Omit<Cart, "items"> & {
   readonly items: readonly CartItemDetails[];
+  readonly subtotalEth: string;
+  readonly totalQuantity: number;
 };

@@ -91,6 +91,7 @@ Rotas atuais:
 
 ```text
 /                    # Homepage e catálogo
+/cart                # Carrinho e resumo financeiro
 /nfts/$nftId         # Detalhes de um NFT
 ```
 
@@ -137,7 +138,7 @@ O TanStack Query controla:
 - estados de carregamento e erro;
 - cancelamento de consultas obsoletas;
 - refetch manual;
-- mutation para inclusão no carrinho;
+- mutations para incluir, alterar, remover e limpar o carrinho;
 - atualização do cache do carrinho após mutations.
 
 O `AbortSignal` recebido pelas query functions é encaminhado ao Axios.
@@ -153,6 +154,9 @@ GET  /api/nfts
 GET  /api/nfts/:nftId
 GET  /api/cart
 POST /api/cart/items
+PATCH /api/cart/items/:itemId
+DELETE /api/cart/items/:itemId
+DELETE /api/cart/items
 ```
 
 Os tipos das respostas ficam nas respectivas features. O MSW implementa os mesmos contratos esperados pelo cliente.
@@ -171,6 +175,8 @@ carts por ownerId
 O visitante recebe um identificador criado por `crypto.randomUUID()`. Esse identificador é enviado em `X-Cart-Owner-Id` e persistido no `localStorage`.
 
 O carrinho também é serializado no `localStorage`. A persistência existe apenas para sustentar a demonstração entre recarregamentos; uma API real assumiria essa responsabilidade em produção.
+
+Cada resposta do carrinho inclui itens enriquecidos, quantidade total e subtotal. Valores em ETH permanecem como strings na fronteira HTTP e são convertidos em unidades inteiras com `BigInt` durante os cálculos, evitando imprecisão de ponto flutuante.
 
 ## Modelagem de NFT e edições
 
@@ -223,7 +229,7 @@ Controles interativos possuem rótulos acessíveis, foco visível e elementos se
 - Os 12 NFTs possuem artes próprias em WebP.
 - Todos possuem quatro edições comerciais, mas somente o Aurora Ape possui quatro imagens diferentes.
 - Botões sem fluxo definido pelo desafio permanecem apresentacionais.
-- O carrinho possui domínio e endpoints, mas sua rota visual ainda não foi criada.
+- O carrinho possui rota responsiva, persistência e operações completas; o botão de finalização permanece bloqueado até a implementação do checkout.
 - Blockchain, carteiras e pagamento são simulados; nenhuma transação real será executada.
 
 Esses trade-offs priorizam fluxos verificáveis e arquitetura extensível dentro do prazo de 48 horas.
@@ -232,7 +238,7 @@ Esses trade-offs priorizam fluxos verificáveis e arquitetura extensível dentro
 
 ### Carrinho e checkout
 
-A rota do carrinho consumirá a query já existente. Novas mutations serão adicionadas para alterar quantidade, remover itens e limpar o carrinho. O checkout usará um identificador de idempotência para impedir confirmações duplicadas.
+O carrinho usa a mesma chave de cache nos cabeçalhos, no painel de compra e na rota `/cart`. As mutations substituem o cache pela resposta confirmada da API, mantendo quantidade e totais sincronizados. O checkout usará um identificador de idempotência para impedir confirmações duplicadas.
 
 ### Autenticação
 

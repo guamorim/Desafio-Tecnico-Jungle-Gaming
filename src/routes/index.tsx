@@ -10,6 +10,7 @@ import { MobileHomeHeader } from "@/components/layout/mobile-home-header";
 import { Button } from "@/components/ui/button";
 import { getGuestOwnerId } from "@/features/cart/guest-owner";
 import { cartQueryOptions } from "@/features/cart/queries/cart-query";
+import { restoreMocking } from "@/mocks/enable-mocking";
 import type {
   NftCatalogSort,
   NftCatalogTab,
@@ -52,11 +53,7 @@ function HomePage() {
     nftListQueryOptions(catalogSearch),
   );
 
-  const cartItemCount =
-    cart?.items.reduce(
-      (total, item) => total + item.quantity,
-      0,
-    ) ?? 0;
+  const cartItemCount = cart?.totalQuantity ?? 0;
 
   function handleSearchSubmit(searchValue: string) {
     const normalizedSearch = searchValue
@@ -137,7 +134,7 @@ function HomePage() {
       "Carregando a seleção de NFTs...";
 
     catalogContent = <NftCatalogSkeleton />;
-  } else if (isError) {
+  } else if (!data) {
     catalogDescription =
       "Não foi possível carregar o catálogo.";
 
@@ -148,7 +145,11 @@ function HomePage() {
             Não foi possível carregar os NFTs.
           </p>
 
-          <Button onClick={() => void refetch()}>
+          <Button
+            onClick={() => {
+              void restoreMocking().then(() => refetch());
+            }}
+          >
             Tentar novamente
           </Button>
         </div>
@@ -163,6 +164,15 @@ function HomePage() {
         <NftCatalogEmptyState />
       ) : (
         <>
+          {isError && (
+            <p
+              role="status"
+              className="mb-4 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-muted-foreground"
+            >
+              Não foi possível atualizar o catálogo. Exibindo os últimos dados carregados.
+            </p>
+          )}
+
           <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {data.items.map((nft) => (
               <li key={nft.id}>

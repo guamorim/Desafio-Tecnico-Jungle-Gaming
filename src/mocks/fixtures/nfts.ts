@@ -187,6 +187,102 @@ export const nftFixtures = [
   },
 ] as const satisfies readonly NftSummary[];
 
+type NftFixtureId = (typeof nftFixtures)[number]["id"];
+
+type NftEditorialMetadata = {
+  readonly attributes: readonly [string, string, string];
+  readonly description: string;
+  readonly rating: string;
+  readonly reviewCount: number;
+};
+
+const nftEditorialMetadata = {
+  "nft-aurora-ape": {
+    attributes: ["Óculos", "Aurora", "Raro"],
+    description:
+      "Um colecionável digital 1/50 da coleção Jungle Genesis, inspirado pelas luzes da aurora e verificado na Ethereum.",
+    rating: "4.8",
+    reviewCount: 19,
+  },
+  "nft-cyber-tiger": {
+    attributes: ["Neon", "Felino", "Animado"],
+    description:
+      "Um guardião cibernético que combina instinto selvagem e luzes urbanas em uma peça colecionável da Jungle Genesis.",
+    rating: "4.9",
+    reviewCount: 27,
+  },
+  "nft-ether-bloom": {
+    attributes: ["Flora", "Etéreo", "Generativo"],
+    description:
+      "Uma flor digital formada por camadas generativas que registram o encontro entre natureza, código e movimento.",
+    rating: "4.6",
+    reviewCount: 14,
+  },
+  "nft-midnight-totem": {
+    attributes: ["Totem", "Noturno", "Esculpido"],
+    description:
+      "Uma escultura tridimensional inspirada em símbolos ancestrais, iluminada por reflexos que surgem apenas à meia-noite.",
+    rating: "4.7",
+    reviewCount: 16,
+  },
+  "nft-sage-nomad": {
+    attributes: ["Chapéu", "Viajante", "Sereno"],
+    description:
+      "O retrato de um viajante contemplativo da Nomad Society, criado para representar curiosidade, calma e descoberta.",
+    rating: "4.8",
+    reviewCount: 22,
+  },
+  "nft-neon-vessel": {
+    attributes: ["Avatar", "Neon", "Utilitário"],
+    description:
+      "Um avatar utilitário da Jungle Genesis que funciona como identidade visual e passe de acesso para experiências da comunidade.",
+    rating: "4.5",
+    reviewCount: 11,
+  },
+  "nft-cosmic-bloom": {
+    attributes: ["Cósmico", "Flora", "Generativo"],
+    description:
+      "Uma composição generativa em que pétalas digitais se expandem como uma nebulosa, produzindo uma floração única a cada edição.",
+    rating: "4.9",
+    reviewCount: 31,
+  },
+  "nft-violet-nomad": {
+    attributes: ["Violeta", "Viajante", "3D"],
+    description:
+      "Uma interpretação tridimensional dos exploradores da Nomad Society, marcada por tons violetas e acabamento cinematográfico.",
+    rating: "4.7",
+    reviewCount: 18,
+  },
+  "nft-ivory-baron": {
+    attributes: ["Marfim", "Barão", "Elegante"],
+    description:
+      "Um personagem colecionável de postura aristocrática, criado para representar a linhagem clássica da Jungle Genesis.",
+    rating: "4.6",
+    reviewCount: 13,
+  },
+  "nft-golden-beat": {
+    attributes: ["Música", "Dourado", "Áudio"],
+    description:
+      "Uma obra audiovisual que transforma batidas tropicais em pulsos dourados e inclui uma faixa exclusiva de Maya K.",
+    rating: "4.8",
+    reviewCount: 24,
+  },
+  "nft-golden-signal": {
+    attributes: ["Sinal", "Dourado", "Membro"],
+    description:
+      "Um passe de associação da Digital Flora que concede acesso a lançamentos antecipados e encontros reservados da coleção.",
+    rating: "4.7",
+    reviewCount: 20,
+  },
+  "nft-jungle-oracle": {
+    attributes: ["Oráculo", "Mítico", "Jogo"],
+    description:
+      "O personagem mais raro da Jungle Genesis, capaz de desbloquear missões e recompensas especiais no universo do jogo.",
+    rating: "5.0",
+    reviewCount: 42,
+  },
+} satisfies Record<NftFixtureId, NftEditorialMetadata>;
+
 function createNftEditions(
   nft: NftSummary,
   index: number,
@@ -262,58 +358,53 @@ function multiplyEthPrice(
 }
 
 export const nftDetailFixtures = nftFixtures.map(
-  (nft, index) => ({
-    ...nft,
-    attributes:
-      nft.id === "nft-aurora-ape"
-        ? ["Óculos", "Aurora", "Raro"]
-        : [nft.category, nft.network, "Limitado"],
-    contractAddress: `0x7A42${String(index + 1).padStart(4, "0")}19E8`,
-    description:
-      nft.id === "nft-aurora-ape"
-        ? "Um colecionável digital 1/50 da coleção Jungle Genesis, inspirado pelas luzes da aurora e verificado na Ethereum."
-        : `${nft.name} é uma obra da coleção ${nft.collectionName}, criada por ${nft.creatorName}.`,
-    editions: createNftEditions(nft, index),
-    gallery:
-      nft.id === "nft-aurora-ape"
-        ? [
-            nft.imageUrl,
-            "/images/nfts/aurora-ape-1-50.webp",
-            "/images/nfts/aurora-ape-1-10.webp",
-            "/images/nfts/aurora-ape-1-1.webp",
-          ]
-        : [nft.imageUrl],
-    rating: nft.id === "nft-aurora-ape" ? "4.8" : "4.7",
-    relatedNfts: nftFixtures
-      .filter(
-        (candidate) =>
-          candidate.id !== nft.id &&
-          candidate.collectionName === nft.collectionName,
-      )
-      .slice(0, 5),
-    reviewCount: nft.id === "nft-aurora-ape" ? 19 : 12 + index,
-    reviews: [
-      {
-        id: `${nft.id}-review-1`,
-        authorName: "Lia Collector",
-        comment:
-          "A arte tem uma identidade muito forte e os detalhes funcionam muito bem em alta resolução.",
-        createdAt: "2026-10-14T18:30:00.000Z",
-        rating: 5,
-      },
-      {
-        id: `${nft.id}-review-2`,
-        authorName: "Rafael Web3",
-        comment:
-          "Boa apresentação da coleção e informações claras sobre a edição.",
-        createdAt: "2026-10-13T12:10:00.000Z",
-        rating: 4,
-      },
-    ],
-    royaltyPercentage: "5",
-    tokenId:
-      nft.id === "nft-aurora-ape"
-        ? "#0042"
-        : `#${String(100 + index * 23).padStart(4, "0")}`,
-  }),
+  (nft, index) => {
+    const editorialMetadata = nftEditorialMetadata[nft.id];
+
+    return {
+      ...nft,
+      ...editorialMetadata,
+      contractAddress: `0x7A42${String(index + 1).padStart(4, "0")}19E8`,
+      editions: createNftEditions(nft, index),
+      gallery:
+        nft.id === "nft-aurora-ape"
+          ? [
+              nft.imageUrl,
+              "/images/nfts/aurora-ape-1-50.webp",
+              "/images/nfts/aurora-ape-1-10.webp",
+              "/images/nfts/aurora-ape-1-1.webp",
+            ]
+          : [nft.imageUrl],
+      relatedNfts: nftFixtures
+        .filter(
+          (candidate) =>
+            candidate.id !== nft.id &&
+            candidate.collectionName === nft.collectionName,
+        )
+        .slice(0, 5),
+      reviews: [
+        {
+          id: `${nft.id}-review-1`,
+          authorName: "Lia Collector",
+          comment:
+            "A arte tem uma identidade muito forte e os detalhes funcionam muito bem em alta resolução.",
+          createdAt: "2026-10-14T18:30:00.000Z",
+          rating: 5,
+        },
+        {
+          id: `${nft.id}-review-2`,
+          authorName: "Rafael Web3",
+          comment:
+            "Boa apresentação da coleção e informações claras sobre a edição.",
+          createdAt: "2026-10-13T12:10:00.000Z",
+          rating: 4,
+        },
+      ],
+      royaltyPercentage: "5",
+      tokenId:
+        nft.id === "nft-aurora-ape"
+          ? "#0042"
+          : `#${String(100 + index * 23).padStart(4, "0")}`,
+    };
+  },
 ) satisfies readonly NftDetail[];

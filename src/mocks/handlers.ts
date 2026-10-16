@@ -6,11 +6,13 @@ import {
   type NftCatalogSort,
   type NftCatalogTab,
 } from "@/features/nfts/catalog-filters";
+import { calculateEthTotal } from "@/features/cart/cart-totals";
 import type {
   AddCartItemInput,
   Cart,
   CartItem,
   CartResponse,
+  UpdateCartItemInput,
 } from "@/features/cart/types";
 import type {
   ListNftsResponse,
@@ -229,6 +231,25 @@ function isAddCartItemInput(
   );
 }
 
+function isUpdateCartItemInput(
+  value: unknown,
+): value is Pick<UpdateCartItemInput, "quantity"> {
+  if (
+    typeof value !== "object" ||
+    value === null
+  ) {
+    return false;
+  }
+
+  const input = value as Record<string, unknown>;
+
+  return (
+    typeof input.quantity === "number" &&
+    Number.isInteger(input.quantity) &&
+    input.quantity > 0
+  );
+}
+
 function createEmptyCart(ownerId: string): Cart {
   return {
     id: `cart-${ownerId}`,
@@ -242,42 +263,60 @@ function createCartResponse(
   cart: Cart,
   nfts: readonly NftDetail[],
 ): CartResponse {
+  const items = cart.items.flatMap((item) => {
+    const nft = nfts.find(
+      (candidate) => candidate.id === item.nftId,
+    );
+    const edition = nft?.editions.find(
+      (candidate) =>
+        candidate.id === item.editionId,
+    );
+
+    if (!nft || !edition) {
+      return [];
+    }
+
+    return [
+      {
+        ...item,
+        lineTotalEth: calculateEthTotal([
+          {
+            priceEth: edition.priceEth,
+            quantity: item.quantity,
+          },
+        ]),
+        nft: {
+          name: nft.name,
+          collectionName: nft.collectionName,
+          imageUrl: nft.imageUrl,
+          version: nft.version,
+        },
+        edition: {
+          name: edition.name,
+          priceEth: edition.priceEth,
+          availableQuantity:
+            edition.availableQuantity,
+          maximumPurchaseQuantity:
+            edition.maximumPurchaseQuantity,
+          version: edition.version,
+        },
+      },
+    ];
+  });
+
   return {
     ...cart,
-    items: cart.items.flatMap((item) => {
-      const nft = nfts.find(
-        (candidate) => candidate.id === item.nftId,
-      );
-      const edition = nft?.editions.find(
-        (candidate) =>
-          candidate.id === item.editionId,
-      );
-
-      if (!nft || !edition) {
-        return [];
-      }
-
-      return [
-        {
-          ...item,
-          nft: {
-            name: nft.name,
-            collectionName: nft.collectionName,
-            imageUrl: nft.imageUrl,
-            version: nft.version,
-          },
-          edition: {
-            name: edition.name,
-            priceEth: edition.priceEth,
-            availableQuantity:
-              edition.availableQuantity,
-            maximumPurchaseQuantity:
-              edition.maximumPurchaseQuantity,
-            version: edition.version,
-          },
-        },
-      ];
-    }),
+    items,
+    subtotalEth: calculateEthTotal(
+      items.map((item) => ({
+        priceEth: item.edition.priceEth,
+        quantity: item.quantity,
+      })),
+    ),
+    totalQuantity: items.reduce(
+      (total, item) => total + item.quantity,
+      0,
+    ),
   };
 }
 
@@ -479,6 +518,174 @@ export const handlers = [
         {
           status: currentItem ? 200 : 201,
         },
+      );
+    },
+  ),
+  http.patch(
+    "/api/cart/items/:itemId",
+    async ({ params, request }) => {
+      await delay(400);
+
+      const ownerId = request.headers.get(
+        "X-Cart-Owner-Id",
+      );
+      const input: unknown = await request.json();
+
+      if (!ownerId) {
+        return HttpResponse.json(
+          { message: "Identidade do carrinho ausente." },
+          { status: 400 },
+        );
+      }
+
+      if (!isUpdateCartItemInput(input)) {
+        return HttpResponse.json(
+          { message: "Quantidade inválida." },
+          { status: 400 },
+        );
+      }
+
+      const database = getMockDatabase();
+      const currentCart = database.carts[ownerId];
+      const itemId = String(params.itemId);
+      const currentItem = currentCart?.items.find(
+        (item) => item.id === itemId,
+      );
+
+      if (!currentCart || !currentItem) {
+        return HttpResponse.json(
+          { message: "Item do carrinho não encontrado." },
+          { status: 404 },
+        );
+      }
+
+      const nft = database.nfts.find(
+        (item) => item.id === currentItem.nftId,
+      );
+      const edition = nft?.editions.find(
+        (item) =>
+          item.id === currentItem.editionId,
+      );
+
+      if (!edition) {
+        return HttpResponse.json(
+          { message: "Edição não encontrada." },
+          { status: 404 },
+        );
+      }
+
+      const purchaseLimit = Math.min(
+        edition.availableQuantity,
+        edition.maximumPurchaseQuantity,
+      );
+
+      if (input.quantity > purchaseLimit) {
+        return HttpResponse.json(
+          {
+            message:
+              purchaseLimit === 0
+                ? "Esta edição está esgotada."
+                : `O limite desta edição é ${purchaseLimit}.`,
+          },
+          { status: 409 },
+        );
+      }
+
+      const nextCart = {
+        ...currentCart,
+        items: currentCart.items.map((item) =>
+          item.id === itemId
+            ? { ...item, quantity: input.quantity }
+            : item,
+        ),
+        version: currentCart.version + 1,
+      } satisfies Cart;
+
+      saveMockCart(nextCart);
+
+      return HttpResponse.json(
+        createCartResponse(nextCart, database.nfts),
+      );
+    },
+  ),
+  http.delete(
+    "/api/cart/items/:itemId",
+    async ({ params, request }) => {
+      await delay(400);
+
+      const ownerId = request.headers.get(
+        "X-Cart-Owner-Id",
+      );
+
+      if (!ownerId) {
+        return HttpResponse.json(
+          { message: "Identidade do carrinho ausente." },
+          { status: 400 },
+        );
+      }
+
+      const database = getMockDatabase();
+      const currentCart = database.carts[ownerId];
+      const itemId = String(params.itemId);
+      const itemExists = currentCart?.items.some(
+        (item) => item.id === itemId,
+      );
+
+      if (!currentCart || !itemExists) {
+        return HttpResponse.json(
+          { message: "Item do carrinho não encontrado." },
+          { status: 404 },
+        );
+      }
+
+      const nextCart = {
+        ...currentCart,
+        items: currentCart.items.filter(
+          (item) => item.id !== itemId,
+        ),
+        version: currentCart.version + 1,
+      } satisfies Cart;
+
+      saveMockCart(nextCart);
+
+      return HttpResponse.json(
+        createCartResponse(nextCart, database.nfts),
+      );
+    },
+  ),
+  http.delete(
+    "/api/cart/items",
+    async ({ request }) => {
+      await delay(400);
+
+      const ownerId = request.headers.get(
+        "X-Cart-Owner-Id",
+      );
+
+      if (!ownerId) {
+        return HttpResponse.json(
+          { message: "Identidade do carrinho ausente." },
+          { status: 400 },
+        );
+      }
+
+      const database = getMockDatabase();
+      const currentCart =
+        database.carts[ownerId] ??
+        createEmptyCart(ownerId);
+      const nextCart = {
+        ...currentCart,
+        items: [],
+        version:
+          currentCart.items.length > 0
+            ? currentCart.version + 1
+            : currentCart.version,
+      } satisfies Cart;
+
+      saveMockCart(nextCart);
+
+      return HttpResponse.json(
+        createCartResponse(nextCart, database.nfts),
       );
     },
   ),

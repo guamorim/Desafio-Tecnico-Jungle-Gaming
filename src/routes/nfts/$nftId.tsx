@@ -7,6 +7,7 @@ import { DesktopDetailHeader } from "@/components/layout/desktop-detail-header";
 import { PageContainer } from "@/components/layout/page-container";
 import { getGuestOwnerId } from "@/features/cart/guest-owner";
 import { cartQueryOptions } from "@/features/cart/queries/cart-query";
+import { restoreMocking } from "@/mocks/enable-mocking";
 import { NftDetailContent } from "@/features/nfts/components/nft-detail-content";
 import { NftDetailError } from "@/features/nfts/components/nft-detail-error";
 import { NftDetailSkeleton } from "@/features/nfts/components/nft-detail-skeleton";
@@ -31,24 +32,22 @@ function NftDetailPage() {
     refetch,
   } = useQuery(nftDetailQueryOptions(nftId));
 
-  const cartItemCount =
-    cart?.items.reduce(
-      (total, item) => total + item.quantity,
-      0,
-    ) ?? 0;
+  const cartItemCount = cart?.totalQuantity ?? 0;
 
   let content;
 
   if (isPending) {
     content = <NftDetailSkeleton />;
-  } else if (error || !nft) {
+  } else if (!nft) {
     content = (
       <NftDetailError
         isNotFound={
           isAxiosError(error) &&
           error.response?.status === 404
         }
-        onRetry={() => void refetch()}
+        onRetry={() => {
+          void restoreMocking().then(() => refetch());
+        }}
       />
     );
   } else {

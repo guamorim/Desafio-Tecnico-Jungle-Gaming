@@ -4,7 +4,7 @@ import {
 } from "@tanstack/react-query";
 
 import { addCartItem } from "../api/add-cart-item";
-import { cartQueryKey } from "../queries/cart-query";
+import { synchronizeCartCache } from "../cart-cache";
 
 export function addCartItemMutationOptions(
   queryClient: QueryClient,
@@ -12,10 +12,7 @@ export function addCartItemMutationOptions(
   return mutationOptions({
     mutationFn: addCartItem,
     onSuccess: (cart) => {
-      queryClient.setQueryData(
-        cartQueryKey(cart.ownerId),
-        cart,
-      );
+      synchronizeCartCache(queryClient, cart);
     },
   });
 }

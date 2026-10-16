@@ -7,7 +7,10 @@ import {
   X,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import {
+  Button,
+  buttonVariants,
+} from "@/components/ui/button";
 
 import { PageContainer } from "./page-container";
 
@@ -174,16 +177,16 @@ export function DesktopHomeHeader({
             {!isSearchOpen && (
               <>
                 <div className="relative">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Carrinho com ${cartItemCount} unidades — página disponível em breve`}
-                    title="Carrinho disponível em breve"
-                    disabled
+                  <Link
+                    to="/cart"
+                    aria-label={`Abrir carrinho com ${cartItemCount} unidades`}
+                    className={buttonVariants({
+                      variant: "ghost",
+                      size: "icon",
+                    })}
                   >
                     <ShoppingCart aria-hidden="true" />
-                  </Button>
+                  </Link>
 
                   {cartItemCount > 0 && (
                     <span
