@@ -16,10 +16,20 @@ export type UpdateCartItemInput = {
   readonly quantity: number;
 };
 
+export type ApplyCartCouponInput = {
+  readonly code: string;
+};
+
+export type CartCoupon = {
+  readonly code: string;
+  readonly discountPercentage: number;
+};
+
 export type Cart = {
   readonly id: string;
   readonly ownerId: string;
   readonly items: readonly CartItem[];
+  readonly couponCode: string | null;
   readonly version: number;
 };
 
@@ -40,8 +50,15 @@ export type CartItemDetails = CartItem & {
   };
 };
 
-export type CartResponse = Omit<Cart, "items"> & {
+export type CartResponse = Omit<
+  Cart,
+  "items" | "couponCode"
+> & {
   readonly items: readonly CartItemDetails[];
+  readonly coupon: CartCoupon | null;
+  readonly discountEth: string;
+  readonly networkFeeEth: string;
   readonly subtotalEth: string;
+  readonly totalEth: string;
   readonly totalQuantity: number;
 };

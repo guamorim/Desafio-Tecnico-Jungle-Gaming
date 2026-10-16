@@ -28,11 +28,54 @@ function readPersistedCarts(): Record<string, Cart> {
       serializedCarts,
     );
 
-    return typeof parsedCarts === "object" &&
-      parsedCarts !== null &&
-      !Array.isArray(parsedCarts)
-      ? (parsedCarts as Record<string, Cart>)
-      : {};
+    if (
+      typeof parsedCarts !== "object" ||
+      parsedCarts === null ||
+      Array.isArray(parsedCarts)
+    ) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsedCarts).flatMap(
+        ([ownerId, storedCart]) => {
+          if (
+            typeof storedCart !== "object" ||
+            storedCart === null ||
+            Array.isArray(storedCart)
+          ) {
+            return [];
+          }
+
+          const cart = storedCart as Partial<Cart>;
+
+          if (
+            typeof cart.id !== "string" ||
+            typeof cart.ownerId !== "string" ||
+            !Array.isArray(cart.items) ||
+            typeof cart.version !== "number"
+          ) {
+            return [];
+          }
+
+          return [
+            [
+              ownerId,
+              {
+                id: cart.id,
+                ownerId: cart.ownerId,
+                items: cart.items,
+                couponCode:
+                  typeof cart.couponCode === "string"
+                    ? cart.couponCode
+                    : null,
+                version: cart.version,
+              } satisfies Cart,
+            ] as const,
+          ];
+        },
+      ),
+    );
   } catch {
     return {};
   }

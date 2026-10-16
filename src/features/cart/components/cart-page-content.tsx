@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   useMutation,
@@ -8,9 +9,10 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { getCartErrorMessage } from "../cart-error-message";
-import { calculateEthTotal } from "../cart-totals";
+import { applyCartCouponMutationOptions } from "../mutations/apply-cart-coupon-mutation";
 import { clearCartMutationOptions } from "../mutations/clear-cart-mutation";
 import { removeCartItemMutationOptions } from "../mutations/remove-cart-item-mutation";
+import { removeCartCouponMutationOptions } from "../mutations/remove-cart-coupon-mutation";
 import { updateCartItemMutationOptions } from "../mutations/update-cart-item-mutation";
 import type { CartResponse } from "../types";
 
@@ -21,6 +23,7 @@ type CartPageContentProps = {
 export function CartPageContent({
   cart,
 }: CartPageContentProps) {
+  const [couponCode, setCouponCode] = useState("");
   const queryClient = useQueryClient();
   const updateItemMutation = useMutation(
     updateCartItemMutationOptions(queryClient),
@@ -31,30 +34,31 @@ export function CartPageContent({
   const clearCartMutation = useMutation(
     clearCartMutationOptions(queryClient),
   );
-  const networkFeeEth = "0.016";
-  const totalEth = calculateEthTotal([
-    {
-      priceEth: cart.subtotalEth,
-      quantity: 1,
-    },
-    {
-      priceEth: networkFeeEth,
-      quantity: 1,
-    },
-  ]);
+  const applyCouponMutation = useMutation(
+    applyCartCouponMutationOptions(queryClient),
+  );
+  const removeCouponMutation = useMutation(
+    removeCartCouponMutationOptions(queryClient),
+  );
   const mutationError =
     updateItemMutation.error ??
     removeItemMutation.error ??
-    clearCartMutation.error;
+    clearCartMutation.error ??
+    applyCouponMutation.error ??
+    removeCouponMutation.error;
   const isMutating =
     updateItemMutation.isPending ||
     removeItemMutation.isPending ||
-    clearCartMutation.isPending;
+    clearCartMutation.isPending ||
+    applyCouponMutation.isPending ||
+    removeCouponMutation.isPending;
 
   function resetMutations() {
     updateItemMutation.reset();
     removeItemMutation.reset();
     clearCartMutation.reset();
+    applyCouponMutation.reset();
+    removeCouponMutation.reset();
   }
 
   function updateQuantity(
@@ -249,8 +253,25 @@ export function CartPageContent({
         </h2>
 
         <form
-          className="flex py-6"
-          onSubmit={(event) => event.preventDefault()}
+          className="flex pt-6"
+          onSubmit={(event) => {
+            event.preventDefault();
+            resetMutations();
+
+            if (cart.coupon) {
+              removeCouponMutation.mutate(undefined, {
+                onSuccess: () => setCouponCode(""),
+              });
+              return;
+            }
+
+            applyCouponMutation.mutate(
+              { code: couponCode },
+              {
+                onSuccess: () => setCouponCode(""),
+              },
+            );
+          }}
         >
           <label
             htmlFor="promotional-code"
@@ -264,17 +285,50 @@ export function CartPageContent({
             type="text"
             placeholder="Digite o código promocional..."
             autoComplete="off"
+            value={cart.coupon?.code ?? couponCode}
+            readOnly={cart.coupon !== null}
+            disabled={isMutating}
+            aria-describedby={
+              cart.coupon
+                ? "applied-coupon-message"
+                : undefined
+            }
+            onChange={(event) =>
+              setCouponCode(event.target.value)
+            }
             className="min-w-0 flex-1 rounded-l-full border bg-background px-4 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring md:rounded-l-md"
           />
           <Button
             type="submit"
             className="rounded-l-none rounded-r-full px-5 md:rounded-r-md"
-            disabled
-            title="Códigos promocionais disponíveis em breve"
+            variant={cart.coupon ? "outline" : "default"}
+            disabled={
+              isMutating ||
+              (!cart.coupon && couponCode.trim() === "")
+            }
           >
-            Aplicar
+            {applyCouponMutation.isPending
+              ? "Aplicando..."
+              : removeCouponMutation.isPending
+                ? "Removendo..."
+                : cart.coupon
+                  ? "Remover"
+                  : "Aplicar"}
           </Button>
         </form>
+
+        <div className="min-h-12 py-2">
+          {cart.coupon && (
+            <p
+              id="applied-coupon-message"
+              role="status"
+              className="text-xs text-primary"
+            >
+              Cupom {cart.coupon.code} aplicado: {" "}
+              {cart.coupon.discountPercentage}% de desconto.
+            </p>
+          )}
+        </div>
 
         <dl className="space-y-4 pb-6">
           <div className="flex items-center justify-between gap-4">
@@ -282,14 +336,19 @@ export function CartPageContent({
             <dd>{cart.subtotalEth} ETH</dd>
           </div>
           <div className="flex items-center justify-between gap-4">
-            <dt>Desconto do lançamento</dt>
-            <dd>(-) 0.00</dd>
+            <dt>
+              Desconto
+              {cart.coupon
+                ? ` (${cart.coupon.discountPercentage}%)`
+                : ""}
+            </dt>
+            <dd>(-) {cart.discountEth} ETH</dd>
           </div>
           <div className="flex items-start justify-between gap-4">
             <dt>Taxa de rede</dt>
             <dd className="text-right">
               <span className="block">
-                {networkFeeEth} ETH
+                {cart.networkFeeEth} ETH
               </span>
               <span className="text-xs text-primary">
                 Taxa estimada
@@ -299,7 +358,7 @@ export function CartPageContent({
           <div className="flex items-center justify-between gap-4 border-t pt-4 text-lg font-bold">
             <dt>Total</dt>
             <dd className="text-primary">
-              {totalEth} ETH
+              {cart.totalEth} ETH
             </dd>
           </div>
         </dl>

@@ -6,9 +6,13 @@ import {
   type NftCatalogSort,
   type NftCatalogTab,
 } from "@/features/nfts/catalog-filters";
-import { calculateEthTotal } from "@/features/cart/cart-totals";
+import {
+  calculateEthPercentage,
+  calculateEthTotal,
+} from "@/features/cart/cart-totals";
 import type {
   AddCartItemInput,
+  ApplyCartCouponInput,
   Cart,
   CartItem,
   CartResponse,
@@ -23,6 +27,7 @@ import {
   getMockDatabase,
   saveMockCart,
 } from "./mock-database";
+import { findMockCoupon } from "./fixtures/coupons";
 
 const pageSize = 9;
 const newReleaseCutoff = Date.parse(
@@ -250,11 +255,31 @@ function isUpdateCartItemInput(
   );
 }
 
+function isApplyCartCouponInput(
+  value: unknown,
+): value is ApplyCartCouponInput {
+  if (
+    typeof value !== "object" ||
+    value === null
+  ) {
+    return false;
+  }
+
+  const input = value as Record<string, unknown>;
+
+  return (
+    typeof input.code === "string" &&
+    input.code.trim().length > 0 &&
+    input.code.trim().length <= 32
+  );
+}
+
 function createEmptyCart(ownerId: string): Cart {
   return {
     id: `cart-${ownerId}`,
     ownerId,
     items: [],
+    couponCode: null,
     version: 0,
   };
 }
@@ -303,16 +328,56 @@ function createCartResponse(
       },
     ];
   });
+  const subtotalEth = calculateEthTotal(
+    items.map((item) => ({
+      priceEth: item.edition.priceEth,
+      quantity: item.quantity,
+    })),
+  );
+  const storedCoupon = cart.couponCode
+    ? findMockCoupon(cart.couponCode)
+    : undefined;
+  const coupon =
+    storedCoupon?.status === "active"
+      ? {
+          code: storedCoupon.code,
+          discountPercentage:
+            storedCoupon.discountPercentage,
+        }
+      : null;
+  const discountEth = coupon
+    ? calculateEthPercentage(
+        subtotalEth,
+        coupon.discountPercentage,
+      )
+    : "0";
+  const networkFeeEth =
+    items.length > 0 ? "0.016" : "0";
+  const totalEth = calculateEthTotal([
+    {
+      priceEth: subtotalEth,
+      quantity: 1,
+    },
+    {
+      priceEth: `-${discountEth}`,
+      quantity: 1,
+    },
+    {
+      priceEth: networkFeeEth,
+      quantity: 1,
+    },
+  ]);
 
   return {
-    ...cart,
+    id: cart.id,
+    ownerId: cart.ownerId,
+    version: cart.version,
     items,
-    subtotalEth: calculateEthTotal(
-      items.map((item) => ({
-        priceEth: item.edition.priceEth,
-        quantity: item.quantity,
-      })),
-    ),
+    coupon,
+    discountEth,
+    networkFeeEth,
+    subtotalEth,
+    totalEth,
     totalQuantity: items.reduce(
       (total, item) => total + item.quantity,
       0,
@@ -676,10 +741,122 @@ export const handlers = [
       const nextCart = {
         ...currentCart,
         items: [],
+        couponCode: null,
         version:
-          currentCart.items.length > 0
+          currentCart.items.length > 0 ||
+          currentCart.couponCode !== null
             ? currentCart.version + 1
             : currentCart.version,
+      } satisfies Cart;
+
+      saveMockCart(nextCart);
+
+      return HttpResponse.json(
+        createCartResponse(nextCart, database.nfts),
+      );
+    },
+  ),
+  http.post(
+    "/api/cart/coupon",
+    async ({ request }) => {
+      await delay(500);
+
+      const ownerId = request.headers.get(
+        "X-Cart-Owner-Id",
+      );
+      const input: unknown = await request.json();
+
+      if (!ownerId) {
+        return HttpResponse.json(
+          { message: "Identidade do carrinho ausente." },
+          { status: 400 },
+        );
+      }
+
+      if (!isApplyCartCouponInput(input)) {
+        return HttpResponse.json(
+          { message: "Informe um código promocional válido." },
+          { status: 400 },
+        );
+      }
+
+      const database = getMockDatabase();
+      const currentCart =
+        database.carts[ownerId] ??
+        createEmptyCart(ownerId);
+
+      if (currentCart.items.length === 0) {
+        return HttpResponse.json(
+          {
+            message:
+              "Adicione um NFT antes de aplicar o cupom.",
+          },
+          { status: 409 },
+        );
+      }
+
+      const normalizedCode = input.code
+        .trim()
+        .toLocaleUpperCase("pt-BR");
+      const coupon = findMockCoupon(normalizedCode);
+
+      if (!coupon) {
+        return HttpResponse.json(
+          { message: "Código promocional inválido." },
+          { status: 422 },
+        );
+      }
+
+      if (coupon.status === "expired") {
+        return HttpResponse.json(
+          { message: "Este código promocional expirou." },
+          { status: 410 },
+        );
+      }
+
+      const nextCart = {
+        ...currentCart,
+        couponCode: coupon.code,
+        version:
+          currentCart.couponCode === coupon.code
+            ? currentCart.version
+            : currentCart.version + 1,
+      } satisfies Cart;
+
+      saveMockCart(nextCart);
+
+      return HttpResponse.json(
+        createCartResponse(nextCart, database.nfts),
+      );
+    },
+  ),
+  http.delete(
+    "/api/cart/coupon",
+    async ({ request }) => {
+      await delay(400);
+
+      const ownerId = request.headers.get(
+        "X-Cart-Owner-Id",
+      );
+
+      if (!ownerId) {
+        return HttpResponse.json(
+          { message: "Identidade do carrinho ausente." },
+          { status: 400 },
+        );
+      }
+
+      const database = getMockDatabase();
+      const currentCart =
+        database.carts[ownerId] ??
+        createEmptyCart(ownerId);
+      const nextCart = {
+        ...currentCart,
+        couponCode: null,
+        version:
+          currentCart.couponCode === null
+            ? currentCart.version
+            : currentCart.version + 1,
       } satisfies Cart;
 
       saveMockCart(nextCart);

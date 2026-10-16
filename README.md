@@ -53,8 +53,10 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - Consulta do carrinho com TanStack Query.
 - Inclusão de uma edição pelo painel de compra.
 - Alteração de quantidade, remoção individual e limpeza completa.
+- Aplicação e remoção de cupom promocional.
+- Tratamento de cupom inválido e expirado.
 - Validação de NFT, edição, quantidade, estoque e limite no MSW.
-- Subtotal por item, subtotal do carrinho, taxa estimada e total.
+- Subtotal, desconto, taxa de rede e total calculados pela API simulada.
 - Cálculos de ETH com inteiros arbitrários, sem erros de ponto flutuante.
 - Skeleton, erro recuperável e estado vazio.
 - Recomendações que excluem NFTs presentes no carrinho.
@@ -188,7 +190,17 @@ POST /api/cart/items
 PATCH /api/cart/items/:itemId
 DELETE /api/cart/items/:itemId
 DELETE /api/cart/items
+POST /api/cart/coupon
+DELETE /api/cart/coupon
 ```
+
+Cupons determinísticos disponíveis para validação manual:
+
+| Código | Resultado esperado |
+| --- | --- |
+| `JUNGLE10` | Aplica 10% de desconto. |
+| `GENESIS20` | Retorna erro de cupom expirado. |
+| Qualquer outro | Retorna erro de cupom inválido. |
 
 As rotas do carrinho usam o header `X-Cart-Owner-Id`. Para visitantes anônimos, o cliente cria um identificador com `crypto.randomUUID()` e o mantém no `localStorage`.
 

@@ -139,6 +139,7 @@ O TanStack Query controla:
 - cancelamento de consultas obsoletas;
 - refetch manual;
 - mutations para incluir, alterar, remover e limpar o carrinho;
+- mutations para aplicar e remover cupom promocional;
 - atualização do cache do carrinho após mutations.
 
 O `AbortSignal` recebido pelas query functions é encaminhado ao Axios.
@@ -157,6 +158,8 @@ POST /api/cart/items
 PATCH /api/cart/items/:itemId
 DELETE /api/cart/items/:itemId
 DELETE /api/cart/items
+POST /api/cart/coupon
+DELETE /api/cart/coupon
 ```
 
 Os tipos das respostas ficam nas respectivas features. O MSW implementa os mesmos contratos esperados pelo cliente.
@@ -176,7 +179,9 @@ O visitante recebe um identificador criado por `crypto.randomUUID()`. Esse ident
 
 O carrinho também é serializado no `localStorage`. A persistência existe apenas para sustentar a demonstração entre recarregamentos; uma API real assumiria essa responsabilidade em produção.
 
-Cada resposta do carrinho inclui itens enriquecidos, quantidade total e subtotal. Valores em ETH permanecem como strings na fronteira HTTP e são convertidos em unidades inteiras com `BigInt` durante os cálculos, evitando imprecisão de ponto flutuante.
+Cada resposta do carrinho inclui itens enriquecidos, cupom aplicado, quantidade total, subtotal, desconto, taxa de rede e total. A interface não recalcula a cotação: ela apresenta os valores confirmados pela API simulada. Valores em ETH permanecem como strings na fronteira HTTP e são convertidos em unidades inteiras com `BigInt` durante os cálculos, evitando imprecisão de ponto flutuante.
+
+Os cupons são fixtures determinísticas. `JUNGLE10` representa sucesso com 10% de desconto, `GENESIS20` representa expiração e códigos desconhecidos retornam erro de validação. O código aplicado faz parte do carrinho persistido e toda alteração de itens produz uma nova cotação.
 
 ## Modelagem de NFT e edições
 
@@ -238,7 +243,7 @@ Esses trade-offs priorizam fluxos verificáveis e arquitetura extensível dentro
 
 ### Carrinho e checkout
 
-O carrinho usa a mesma chave de cache nos cabeçalhos, no painel de compra e na rota `/cart`. As mutations substituem o cache pela resposta confirmada da API, mantendo quantidade e totais sincronizados. O checkout usará um identificador de idempotência para impedir confirmações duplicadas.
+O carrinho usa a mesma chave de cache nos cabeçalhos, no painel de compra e na rota `/cart`. As mutations de itens e cupom substituem o cache pela resposta confirmada da API, mantendo quantidade, desconto e totais sincronizados. O checkout usará um identificador de idempotência para impedir confirmações duplicadas.
 
 ### Autenticação
 
