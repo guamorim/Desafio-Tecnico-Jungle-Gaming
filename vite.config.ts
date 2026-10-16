@@ -18,4 +18,13 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  server: {
+    watch: {
+      ignored: [
+        "**/playwright-report/**",
+        "**/test-results/**",
+        "**/blob-report/**",
+      ],
+    },
+  },
 });

@@ -98,7 +98,7 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - ESLint
 - Playwright
 
-Socket.IO e Lighthouse fazem parte das próximas etapas do desafio. A base do Playwright já executa um smoke test em Chromium desktop e mobile.
+Socket.IO e Lighthouse fazem parte das próximas etapas do desafio. O Playwright cobre os fluxos concluídos em Chromium desktop e mobile.
 
 ## Requisitos
 
@@ -335,7 +335,7 @@ Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite 
 - Gerenciamento e conexão mockada de carteiras.
 - Upload e remoção de avatar.
 - Atualizações de estoque com Socket.IO.
-- Expansão dos testes E2E e regressão visual com Playwright.
+- Cenários adicionais de falha e regressão visual com Playwright.
 - Auditoria e documentação do Lighthouse.
 - Deploy público.
 
@@ -349,7 +349,22 @@ npm run build
 npm run test:e2e
 ```
 
-O smoke test atual gera o build de produção, inicia o preview com MSW e valida a homepage e o catálogo em `1440 × 900` e `390 × 844`. Falhas preservam screenshot e trace; o relatório HTML não é versionado.
+A suíte atual possui 23 cenários executados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 46 execuções. Ela cobre:
+
+- carregamento e navegação responsiva da homepage;
+- pesquisa, filtros combinados, ordenação, abas, paginação, histórico e estado vazio do catálogo;
+- troca de edição, indisponibilidade e estado `404` nos detalhes;
+- inclusão, quantidade, persistência, remoção, cupons e totais do carrinho;
+- bloqueio de rota privada, login, cadastro, duplicidade, persistência de sessão e logout;
+- edição do perfil, rejeição da senha atual incorreta e troca de senha com novo login.
+
+O Playwright gera o build de produção e inicia o preview com MSW antes dos testes. Falhas preservam screenshot e trace; resultados e relatórios HTML permanecem como artefatos locais e não são versionados.
+
+Um arquivo específico pode ser executado durante o desenvolvimento:
+
+```bash
+npm run test:e2e -- catalog.spec.ts
+```
 
 ## Desenvolvimento assistido por IA
 

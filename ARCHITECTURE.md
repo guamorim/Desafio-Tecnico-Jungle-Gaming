@@ -293,9 +293,22 @@ Socket.IO
 
 ### Testes e qualidade
 
-Playwright já está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. O smoke test valida a inicialização da homepage, a resposta do catálogo via MSW e a navegação inferior responsiva. Falhas preservam screenshot e trace, e o relatório HTML permanece como artefato local.
+Playwright está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. A suíte possui 23 cenários e produz 46 execuções ao validar os dois projetos.
 
-A cobertura será expandida junto de cada fluxo crítico e receberá regressão visual com baselines versionadas. Lighthouse será executado sobre o mesmo build de produção. Os cenários determinísticos do MSW permitirão testar loading, vazio, erro, conflito de estoque e sucesso sem depender de serviços externos.
+```text
+home.spec.ts          → carregamento e navegação responsiva
+catalog.spec.ts       → busca, filtros, ordenação, histórico e vazio
+nft-details.spec.ts   → edições, indisponibilidade e 404
+cart.spec.ts          → itens, quantidades, persistência, cupons e totais
+auth.spec.ts          → acesso privado, login, cadastro, sessão e logout
+profile.spec.ts       → dados pessoais e alteração de senha
+```
+
+Os testes observam a interface e os contratos acessíveis, restringindo seletores ao domínio relevante da página. Isso evita que conteúdo editorial visualmente semelhante seja confundido com resultados do catálogo. Helpers são compartilhados apenas quando representam uma operação de negócio completa, como autenticar uma conta ou adicionar uma edição ao carrinho.
+
+Cada teste recebe um contexto de navegador isolado, enquanto fixtures determinísticas do MSW tornam os resultados reproduzíveis. Falhas preservam screenshot e trace, e o relatório HTML permanece como artefato local.
+
+A cobertura ainda receberá cenários de falha das próximas features e regressão visual com baselines versionadas. Lighthouse será executado sobre o mesmo build de produção. Os cenários determinísticos do MSW permitirão testar loading, vazio, erro, conflito de estoque e sucesso sem depender de serviços externos.
 
 ## Regras para novas features
 
