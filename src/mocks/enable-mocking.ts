@@ -3,7 +3,27 @@ export async function enableMocking() {
     return;
   }
 
-  const { worker } = await import("./browser");
+  const [
+    { isCommonAssetRequest },
+    { HttpNetworkFrame },
+    { worker },
+  ] = await Promise.all([
+    import("msw"),
+    import("msw/experimental"),
+    import("./browser"),
+  ]);
 
-  await worker.start();
+  await worker.start({
+    onUnhandledFrame({ frame, defaults }) {
+      if (
+        frame instanceof HttpNetworkFrame &&
+        (frame.data.request.mode === "navigate" ||
+          isCommonAssetRequest(frame.data.request))
+      ) {
+        return;
+      }
+
+      defaults.warn();
+    },
+  });
 }

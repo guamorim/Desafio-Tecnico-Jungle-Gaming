@@ -1,8 +1,15 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { listNfts } from "../api/list-nfts";
+import {
+  listNfts,
+  type ListNftsParams,
+} from "../api/list-nfts";
 
-export const nftListQueryOptions = queryOptions({
-  queryKey: ["nfts", "list"] as const,
-  queryFn: listNfts,
-});
+export function nftListQueryOptions(
+  params: ListNftsParams = {},
+) {
+  return queryOptions({
+    queryKey: ["nfts", "list", params] as const,
+    queryFn: () => listNfts(params),
+  });
+}

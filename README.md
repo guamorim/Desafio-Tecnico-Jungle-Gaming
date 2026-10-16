@@ -77,7 +77,8 @@ O Vite exibirá no terminal o endereço local da aplicação.
 │   │       ├── api/
 │   │       │   └── list-nfts.ts   # Requisição do catálogo
 │   │       ├── components/
-│   │       │   └── nft-card.tsx   # Card apresentacional de NFT
+│   │       │   ├── nft-card.tsx   # Card apresentacional de NFT
+│   │       │   └── nft-catalog-empty-state.tsx
 │   │       ├── queries/
 │   │       │   └── nft-list-query.ts
 │   │       └── types.ts           # Contratos dos NFTs e paginação
@@ -127,6 +128,19 @@ GET /api/nfts
 Ele devolve uma lista determinística de NFTs com metadados de paginação e uma latência simulada de 500 ms, permitindo observar o estado de carregamento da interface.
 
 A rota inicial apresenta os itens em cards semânticos e em um grid mobile-first de uma a quatro colunas. As imagens são servidas localmente em WebP para manter a demonstração independente de serviços externos.
+
+### Cenários determinísticos
+
+Com o servidor de desenvolvimento em execução, os seguintes cenários podem ser acessados diretamente:
+
+| URL | Resultado esperado |
+| --- | --- |
+| `http://localhost:5173/` | Catálogo com quatro NFTs. |
+| `http://localhost:5173/?scenario=empty` | Estado vazio após a latência simulada. |
+
+O TanStack Router valida o parâmetro `scenario`, o TanStack Query o inclui na chave do cache e o Axios o encaminha para `GET /api/nfts?scenario=empty`.
+
+Requisições de navegação e assets comuns passam pelo MSW sem avisos. Chamadas inesperadas de API e outros frames de rede continuam produzindo avisos no console para não ocultar falhas de integração.
 
 O fluxo atual é:
 

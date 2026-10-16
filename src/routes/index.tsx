@@ -2,16 +2,30 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
+import type { NftCatalogScenario } from "@/features/nfts/api/list-nfts";
+import { NftCatalogEmptyState } from "@/features/nfts/components/nft-catalog-empty-state";
 import { NftCard } from "@/features/nfts/components/nft-card";
 import { nftListQueryOptions } from "@/features/nfts/queries/nft-list-query";
 
+type CatalogSearch = {
+  readonly scenario?: NftCatalogScenario;
+};
+
 export const Route = createFileRoute("/")({
+  validateSearch: (search): CatalogSearch =>
+    search.scenario === "empty"
+      ? { scenario: "empty" }
+      : {},
   component: HomePage,
 });
 
 function HomePage() {
+  const { scenario } = Route.useSearch();
+
   const { data, isPending, isError, refetch } = useQuery(
-    nftListQueryOptions,
+    nftListQueryOptions(
+      scenario ? { scenario } : {},
+    ),
   );
 
   if (isPending) {
@@ -62,13 +76,17 @@ function HomePage() {
           </p>
         </header>
 
-        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {data.items.map((nft) => (
-            <li key={nft.id}>
-              <NftCard nft={nft} />
-            </li>
-          ))}
-        </ul>
+        {data.items.length === 0 ? (
+          <NftCatalogEmptyState />
+        ) : (
+          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {data.items.map((nft) => (
+              <li key={nft.id}>
+                <NftCard nft={nft} />
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </main>
   );
