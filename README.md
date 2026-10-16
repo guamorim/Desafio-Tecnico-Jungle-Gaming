@@ -31,9 +31,11 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 
 - Rota dinâmica e tipada `/nfts/$nftId`.
 - Skeleton, erro genérico e estado `404`.
-- Galeria com quatro miniaturas.
+- Galeria com imagem própria para cada NFT.
 - Quatro edições por NFT: `ABERTA`, `1/50`, `1/10` e `1/1`.
-- Sincronização bidirecional entre miniatura e edição selecionada.
+- Imagem diferente para cada edição do Aurora Ape.
+- Sincronização bidirecional entre miniatura e versão do Aurora Ape.
+- Reutilização da imagem principal entre as edições dos demais NFTs.
 - Preço, estoque e limite de compra próprios para cada edição.
 - Controle de quantidade respeitando disponibilidade e limite.
 - Avaliação agregada e comentários simulados.
@@ -241,8 +243,9 @@ Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite 
 ## Decisões atuais
 
 - As imagens são locais e otimizadas em WebP.
-- As quatro edições reutilizam temporariamente a imagem principal do NFT.
-- Alguns NFTs ainda compartilham a mesma arte; novas variações visuais serão produzidas posteriormente.
+- Os 12 NFTs do catálogo possuem artes próprias em WebP.
+- Todos os NFTs possuem quatro edições comerciais.
+- Somente o Aurora Ape possui uma imagem diferente para cada edição.
 - Botões editoriais sem fluxo previsto no desafio permanecem apenas apresentacionais.
 - O projeto não realiza transações reais nem depende de blockchain, extensão de carteira ou gateway de pagamento.
 

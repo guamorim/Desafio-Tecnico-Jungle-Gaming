@@ -176,7 +176,7 @@ O carrinho também é serializado no `localStorage`. A persistência existe apen
 
 `NftSummary` contém somente os dados necessários ao catálogo. `NftDetail` estende esse contrato com galeria, edições, avaliações, atributos, contrato e NFTs relacionados.
 
-Cada NFT possui quatro edições:
+Todos os NFTs possuem quatro edições:
 
 ```text
 ABERTA
@@ -185,7 +185,9 @@ ABERTA
 1/1
 ```
 
-Cada edição possui identificador, preço, estoque, limite de compra e versão próprios. Galeria e painel de compra compartilham o mesmo `selectedEditionId`, garantindo sincronização bidirecional.
+Cada edição possui identificador, preço, estoque, limite de compra e número de versão próprios. Galeria e painel de compra compartilham o mesmo `selectedEditionId`, garantindo sincronização bidirecional.
+
+O Aurora Ape possui uma arte diferente para cada edição. Nos demais NFTs, as quatro edições reutilizam a imagem principal da obra, mantendo preços, estoques e limites independentes.
 
 O endpoint do carrinho valida o estado novamente. A interface limita a quantidade por conveniência, mas a API mockada continua sendo a autoridade para estoque e limites.
 
@@ -218,8 +220,8 @@ Controles interativos possuem rótulos acessíveis, foco visível e elementos se
 
 - O MSW permite desenvolver os fluxos antes de existir um backend.
 - `localStorage` é adequado para a demonstração, mas não substitui persistência segura no servidor.
-- As quatro edições reutilizam temporariamente a imagem principal do NFT.
-- Parte do catálogo ainda reutiliza as quatro artes disponíveis.
+- Os 12 NFTs possuem artes próprias em WebP.
+- Todos possuem quatro edições comerciais, mas somente o Aurora Ape possui quatro imagens diferentes.
 - Botões sem fluxo definido pelo desafio permanecem apresentacionais.
 - O carrinho possui domínio e endpoints, mas sua rota visual ainda não foi criada.
 - Blockchain, carteiras e pagamento são simulados; nenhuma transação real será executada.
