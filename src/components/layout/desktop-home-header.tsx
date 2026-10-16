@@ -4,6 +4,7 @@ import {
   LogIn,
   Search,
   ShoppingCart,
+  UserRound,
   X,
 } from "lucide-react";
 
@@ -11,6 +12,7 @@ import {
   Button,
   buttonVariants,
 } from "@/components/ui/button";
+import { useAuth } from "@/features/auth/use-auth";
 
 import { PageContainer } from "./page-container";
 
@@ -27,6 +29,7 @@ export function DesktopHomeHeader({
   initialSearchValue = "",
   onSearchSubmit,
 }: DesktopHomeHeaderProps) {
+  const { session, openLogin } = useAuth();
   const [isSearchOpen, setIsSearchOpen] =
     useState(false);
 
@@ -200,14 +203,27 @@ export function DesktopHomeHeader({
                   )}
                 </div>
 
-                <Button
-                  type="button"
-                  disabled
-                  title="Login disponível em breve"
-                >
-                  <LogIn aria-hidden="true" />
-                  Entrar
-                </Button>
+                {session ? (
+                  <Link
+                    to="/profile"
+                    className={buttonVariants({
+                      variant: "outline",
+                    })}
+                  >
+                    <UserRound aria-hidden="true" />
+                    <span className="max-w-32 truncate">
+                      {session.user.displayName}
+                    </span>
+                  </Link>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={openLogin}
+                  >
+                    <LogIn aria-hidden="true" />
+                    Entrar
+                  </Button>
+                )}
               </>
             )}
           </div>

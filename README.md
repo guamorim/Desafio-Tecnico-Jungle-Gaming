@@ -2,11 +2,11 @@
 
 Marketplace de NFTs desenvolvido como solução para o [desafio frontend da Jungle](https://github.com/junglegaming/frontend-challenge).
 
-A aplicação simula a descoberta e a compra de NFTs com dados determinísticos, interface responsiva e uma arquitetura preparada para autenticação, checkout, eventos em tempo real e testes automatizados.
+A aplicação simula a descoberta e a compra de NFTs com dados determinísticos, interface responsiva, autenticação persistente e uma arquitetura preparada para checkout e eventos em tempo real.
 
 As principais decisões técnicas e os pontos de extensão estão documentados em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-> Status: em desenvolvimento. Homepage, detalhes dos NFTs e carrinho estão funcionais e responsivos. Autenticação, favoritos protegidos e checkout fazem parte das próximas etapas.
+> Status: em desenvolvimento. Homepage, detalhes dos NFTs, carrinho, autenticação e perfil privado estão funcionais e responsivos. Checkout, carteiras e tempo real fazem parte das próximas etapas.
 
 ## Funcionalidades implementadas
 
@@ -66,6 +66,21 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - Persistência do banco mockado no `localStorage`.
 - Atualização do cache após cada mutation bem-sucedida.
 - Mensagens de sucesso e erro na interface.
+
+### Autenticação e perfil
+
+- Login e cadastro responsivos em modal sobre a homepage no desktop e cartão dedicado no mobile.
+- Criação de novas contas com validação por campo e bloqueio de e-mail duplicado.
+- Hash de senha com PBKDF2 e salt individual usando Web Crypto.
+- Sessões mockadas com token, expiração e persistência no `localStorage`.
+- Header e navegação mobile sincronizados com a sessão em todas as rotas.
+- Rota privada e tipada `/profile` com estado de acesso bloqueado para visitantes.
+- Edição de nome, username, e-mail, ENS e apelido da carteira.
+- Alteração opcional de senha mediante confirmação da senha atual.
+- Validação de unicidade de e-mail e username na API simulada.
+- Migração automática de contas armazenadas antes da evolução do modelo.
+- Logout global com limpeza do token e do cache da sessão.
+- Login com Google, Facebook e recuperação de senha exibidos como indisponíveis, pois não fazem parte do backend simulado.
 
 ## Tecnologias
 
@@ -144,6 +159,13 @@ src/
 │   │   ├── queries/             # Query e chave do carrinho
 │   │   ├── guest-owner.ts       # Identidade persistida do visitante
 │   │   └── types.ts
+│   ├── auth/
+│   │   ├── api/                 # Login, cadastro, sessão e perfil
+│   │   ├── components/          # Modal, formulários e perfil responsivo
+│   │   ├── mutations/           # Login, cadastro, perfil e logout
+│   │   ├── queries/             # Query global da sessão
+│   │   ├── auth-provider.tsx    # Sessão e modal disponíveis em todas as rotas
+│   │   └── types.ts
 │   └── nfts/
 │       ├── api/                 # Catálogo e detalhes
 │       ├── components/          # Filtros, cards, galeria e detalhes
@@ -159,13 +181,15 @@ src/
 │   ├── fixtures/nfts.ts         # Dados determinísticos
 │   ├── browser.ts
 │   ├── enable-mocking.ts
-│   ├── handlers.ts              # Endpoints REST simulados
+│   ├── auth-handlers.ts         # Endpoints de autenticação e perfil
+│   ├── handlers.ts              # Endpoints de NFTs e carrinho
 │   └── mock-database.ts         # Banco mockado persistente
 └── routes/
     ├── __root.tsx               # Layout raiz e rodapé
     ├── cart.tsx                 # Carrinho
     ├── index.tsx                # Homepage
-    └── nfts/$nftId.tsx          # Detalhes de um NFT
+    ├── nfts/$nftId.tsx          # Detalhes de um NFT
+    └── profile.tsx              # Perfil privado
 ```
 
 O arquivo `src/routeTree.gen.ts` é gerado automaticamente pelo TanStack Router e não deve ser editado manualmente.
@@ -201,6 +225,11 @@ DELETE /api/cart/items/:itemId
 DELETE /api/cart/items
 POST /api/cart/coupon
 DELETE /api/cart/coupon
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/session
+POST /api/auth/logout
+PATCH /api/auth/profile
 ```
 
 Cupons determinísticos disponíveis para validação manual:
@@ -212,6 +241,15 @@ Cupons determinísticos disponíveis para validação manual:
 | Qualquer outro | Retorna erro de cupom inválido. |
 
 As rotas do carrinho usam o header `X-Cart-Owner-Id`. Para visitantes anônimos, o cliente cria um identificador com `crypto.randomUUID()` e o mantém no `localStorage`.
+
+As rotas privadas usam `Authorization: Bearer <token>`. O interceptor do Axios anexa o token automaticamente. Usuários e sessões são persistidos somente no navegador para fins de demonstração; limpar os dados do site restaura as fixtures.
+
+Contas determinísticas disponíveis para teste:
+
+| E-mail | Senha |
+| --- | --- |
+| `ana@kurio.test` | `Kurio#2026` |
+| `leo@kurio.test` | `Jungle#2026` |
 
 Os endpoints do carrinho validam:
 
@@ -262,6 +300,9 @@ Com o servidor executando em `http://localhost:5173`:
 | `/nfts/nft-aurora-ape` | Detalhes, edições e compra do Aurora Ape. |
 | `/nfts/nft-inexistente` | Estado de NFT não encontrado. |
 | `/cart` | Carrinho persistente, edição de itens e resumo financeiro. |
+| `/profile` | Perfil privado; solicita login quando não há sessão. |
+
+Para validar autenticação, crie também uma conta nova. Ela permanecerá disponível após recarregar a página no mesmo navegador. Alterar a senha no perfil exige a senha atual e o logout permite validar o novo acesso.
 
 As respostas possuem latência simulada para permitir a inspeção dos skeletons e transições de carregamento.
 
@@ -283,14 +324,16 @@ Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite 
 - Todos os NFTs possuem quatro edições comerciais.
 - Somente o Aurora Ape possui uma imagem diferente para cada edição.
 - Botões editoriais sem fluxo previsto no desafio permanecem apenas apresentacionais.
+- Contas, sessões e alterações de perfil são locais e não representam autenticação de produção.
+- Upload de avatar, login social e recuperação de senha permanecem indisponíveis nesta etapa.
 - O projeto não realiza transações reais nem depende de blockchain, extensão de carteira ou gateway de pagamento.
 
 ## Próximas etapas
 
-- Login, cadastro e persistência de sessão.
 - Favoritos protegidos por autenticação.
 - Checkout, pagamento simulado e confirmação.
-- Perfil e gerenciamento de carteiras.
+- Gerenciamento e conexão mockada de carteiras.
+- Upload e remoção de avatar.
 - Atualizações de estoque com Socket.IO.
 - Expansão dos testes E2E e regressão visual com Playwright.
 - Auditoria e documentação do Lighthouse.

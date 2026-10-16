@@ -7,6 +7,8 @@ import {
   UserRound,
 } from "lucide-react";
 
+import { useAuth } from "@/features/auth/use-auth";
+
 type MobileBottomNavigationProps = {
   readonly cartItemCount: number;
 };
@@ -17,6 +19,9 @@ const navigationItemClassName =
 export function MobileBottomNavigation({
   cartItemCount,
 }: MobileBottomNavigationProps) {
+  const { session, openLogin } = useAuth();
+  const isAuthenticated = Boolean(session);
+
   return (
     <nav
       aria-label="Navegação principal mobile"
@@ -75,15 +80,25 @@ export function MobileBottomNavigation({
           )}
         </Link>
 
-        <button
-          type="button"
-          disabled
-          aria-label="Perfil — requer autenticação"
-          title="Entre para acessar o perfil"
-          className={`${navigationItemClassName} cursor-not-allowed`}
-        >
-          <UserRound aria-hidden="true" />
-        </button>
+        {isAuthenticated ? (
+          <Link
+            to="/profile"
+            aria-label="Abrir meu perfil"
+            className={navigationItemClassName}
+          >
+            <UserRound aria-hidden="true" />
+          </Link>
+        ) : (
+          <button
+            type="button"
+            aria-label="Entrar para acessar o perfil"
+            title="Entre para acessar o perfil"
+            className={`${navigationItemClassName} cursor-pointer`}
+            onClick={openLogin}
+          >
+            <UserRound aria-hidden="true" />
+          </button>
+        )}
       </div>
     </nav>
   );

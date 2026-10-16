@@ -1,5 +1,6 @@
 import axios from "axios";
 
+import { getAuthToken } from "@/features/auth/auth-token";
 import { restoreMocking } from "@/mocks/enable-mocking";
 
 export const httpClient = axios.create({
@@ -12,6 +13,17 @@ export const httpClient = axios.create({
 
 httpClient.interceptors.request.use(async (config) => {
   await restoreMocking();
+
+  const token = getAuthToken();
+
+  if (token) {
+    config.headers.set(
+      "Authorization",
+      `Bearer ${token}`,
+    );
+  } else {
+    config.headers.delete("Authorization");
+  }
 
   return config;
 });

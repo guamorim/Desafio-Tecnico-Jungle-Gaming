@@ -3,16 +3,19 @@ import {
   LogIn,
   Search,
   ShoppingCart,
+  UserRound,
 } from "lucide-react";
 
 import {
   Button,
   buttonVariants,
 } from "@/components/ui/button";
+import { useAuth } from "@/features/auth/use-auth";
 
 import { PageContainer } from "./page-container";
 
 type DesktopDetailHeaderProps = {
+  readonly activeItem?: "home" | "market";
   readonly cartItemCount: number;
 };
 
@@ -20,8 +23,11 @@ const navigationClassName =
   "flex h-16 items-center px-3 text-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring";
 
 export function DesktopDetailHeader({
+  activeItem = "market",
   cartItemCount,
 }: DesktopDetailHeaderProps) {
+  const { session, openLogin } = useAuth();
+
   return (
     <header className="hidden md:block">
       <PageContainer>
@@ -41,7 +47,7 @@ export function DesktopDetailHeader({
                 <Link
                   to="/"
                   search={{}}
-                  className={navigationClassName}
+                  className={`${navigationClassName} ${activeItem === "home" ? "relative font-bold text-primary after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary after:content-['']" : ""}`}
                 >
                   Início
                 </Link>
@@ -51,7 +57,7 @@ export function DesktopDetailHeader({
                   to="/"
                   search={{}}
                   hash="catalog"
-                  className={`${navigationClassName} relative font-bold text-primary after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary after:content-['']`}
+                  className={`${navigationClassName} ${activeItem === "market" ? "relative font-bold text-primary after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary after:content-['']" : ""}`}
                 >
                   Mercado
                 </Link>
@@ -109,14 +115,27 @@ export function DesktopDetailHeader({
               )}
             </div>
 
-            <Button
-              type="button"
-              disabled
-              title="Login disponível em breve"
-            >
-              <LogIn aria-hidden="true" />
-              Entrar
-            </Button>
+            {session ? (
+              <Link
+                to="/profile"
+                className={buttonVariants({
+                  variant: "outline",
+                })}
+              >
+                <UserRound aria-hidden="true" />
+                <span className="max-w-32 truncate">
+                  {session.user.displayName}
+                </span>
+              </Link>
+            ) : (
+              <Button
+                type="button"
+                onClick={openLogin}
+              >
+                <LogIn aria-hidden="true" />
+                Entrar
+              </Button>
+            )}
           </div>
         </div>
       </PageContainer>

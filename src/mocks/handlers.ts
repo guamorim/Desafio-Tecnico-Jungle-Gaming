@@ -23,6 +23,7 @@ import type {
   NftDetail,
   NftSummary,
 } from "@/features/nfts/types";
+import { authHandlers } from "./auth-handlers";
 import {
   getMockDatabase,
   saveMockCart,
@@ -386,6 +387,7 @@ function createCartResponse(
 }
 
 export const handlers = [
+  ...authHandlers,
   http.get("/api/nfts", async ({ request }) => {
     const url = new URL(request.url);
     const page = parsePage(

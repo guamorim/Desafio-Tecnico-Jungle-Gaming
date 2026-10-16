@@ -44,7 +44,8 @@ src/
 ├── components/      # Componentes compartilhados e composição visual
 ├── features/        # Domínios da aplicação
 │   ├── nfts/
-│   └── cart/
+│   ├── cart/
+│   └── auth/
 ├── lib/             # Infraestrutura compartilhada
 ├── mocks/           # API REST simulada e dados determinísticos
 └── routes/          # Páginas e integração com o TanStack Router
@@ -81,7 +82,7 @@ features/cart/
 └── types.ts
 ```
 
-Essa separação permite adicionar `auth`, `checkout`, `profile` e `wallets` sem concentrar toda a aplicação em pastas genéricas de componentes e serviços.
+Essa separação permite evoluir `checkout` e `wallets` sem concentrar toda a aplicação em pastas genéricas de componentes e serviços. A feature `auth` já reúne contratos, sessão, formulários, API e perfil.
 
 ### `routes`
 
@@ -93,6 +94,7 @@ Rotas atuais:
 /                    # Homepage e catálogo
 /cart                # Carrinho e resumo financeiro
 /nfts/$nftId         # Detalhes de um NFT
+/profile             # Perfil privado do colecionador
 ```
 
 O arquivo `routeTree.gen.ts` é gerado automaticamente pelo plugin do TanStack Router.
@@ -104,9 +106,9 @@ O estado foi dividido de acordo com sua origem e duração.
 | Tipo | Responsabilidade | Implementação |
 | --- | --- | --- |
 | Estado da URL | Busca, filtros, abas, ordenação e página | TanStack Router |
-| Estado remoto | Catálogo, detalhes e carrinho | TanStack Query |
-| Estado local | Drawer, aba visual, edição e quantidade | React |
-| Estado persistente do visitante | Identificador e carrinho anônimo | `localStorage` |
+| Estado remoto | Catálogo, detalhes, carrinho, sessão e perfil | TanStack Query |
+| Estado local | Drawer, modal, aba visual, edição e quantidade | React |
+| Estado persistente do visitante | Identificador, carrinho, token e banco mockado | `localStorage` |
 
 ### Estado do catálogo na URL
 
@@ -140,6 +142,8 @@ O TanStack Query controla:
 - refetch manual;
 - mutations para incluir, alterar, remover e limpar o carrinho;
 - mutations para aplicar e remover cupom promocional;
+- query global de sessão;
+- mutations de login, cadastro, perfil e logout;
 - atualização do cache do carrinho após mutations.
 
 O `AbortSignal` recebido pelas query functions é encaminhado ao Axios.
@@ -160,6 +164,11 @@ DELETE /api/cart/items/:itemId
 DELETE /api/cart/items
 POST /api/cart/coupon
 DELETE /api/cart/coupon
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/session
+POST /api/auth/logout
+PATCH /api/auth/profile
 ```
 
 Os tipos das respostas ficam nas respectivas features. O MSW implementa os mesmos contratos esperados pelo cliente.
@@ -173,11 +182,19 @@ O banco mockado contém:
 ```text
 nfts
 carts por ownerId
+users
+sessions por token
 ```
 
 O visitante recebe um identificador criado por `crypto.randomUUID()`. Esse identificador é enviado em `X-Cart-Owner-Id` e persistido no `localStorage`.
 
 O carrinho também é serializado no `localStorage`. A persistência existe apenas para sustentar a demonstração entre recarregamentos; uma API real assumiria essa responsabilidade em produção.
+
+Usuários e sessões seguem a mesma estratégia exclusivamente para permitir cadastro, login e perfil verificáveis sem backend. Senhas não são armazenadas em texto: o Web Crypto deriva hashes PBKDF2 com salt individual. Essa proteção aproxima o contrato de uma API real, mas `localStorage` e um Service Worker não constituem uma fronteira de segurança de produção.
+
+O token do cliente é armazenado separadamente e anexado pelo interceptor do Axios como `Authorization: Bearer <token>`. O `AuthProvider`, montado no layout raiz, consulta a sessão uma vez e compartilha usuário e abertura do modal entre homepage, detalhes, carrinho e perfil. Login, cadastro, atualização e logout substituem diretamente o cache da sessão para evitar estados divergentes.
+
+O carregamento do banco normaliza usuários persistidos por versões anteriores, preenchendo username, ENS e apelido da carteira sem invalidar contas já criadas.
 
 Cada resposta do carrinho inclui itens enriquecidos, cupom aplicado, quantidade total, subtotal, desconto, taxa de rede e total. A interface não recalcula a cotação: ela apresenta os valores confirmados pela API simulada. Valores em ETH permanecem como strings na fronteira HTTP e são convertidos em unidades inteiras com `BigInt` durante os cálculos, evitando imprecisão de ponto flutuante.
 
@@ -208,6 +225,7 @@ Tailwind CSS é usado diretamente nos componentes. O breakpoint `md` separa as p
 
 - desktop: navegação completa, sidebar de filtros e miniaturas verticais;
 - mobile: busca destacada, filtros em drawer, navegação inferior da homepage e detalhe em card compacto.
+- perfil: menu lateral e formulário em duas colunas no desktop; cabeçalho compacto e formulário em uma coluna no mobile.
 
 Quando a estrutura muda significativamente, são usados componentes separados, como os cabeçalhos. Quando muda apenas a disposição, o mesmo componente recebe classes responsivas.
 
@@ -235,6 +253,7 @@ Controles interativos possuem rótulos acessíveis, foco visível e elementos se
 - Todos possuem quatro edições comerciais, mas somente o Aurora Ape possui quatro imagens diferentes.
 - Botões sem fluxo definido pelo desafio permanecem apresentacionais.
 - O carrinho possui rota responsiva, persistência e operações completas; o botão de finalização permanece bloqueado até a implementação do checkout.
+- Login, cadastro, sessão, logout e perfil são funcionais; login social, recuperação de senha e avatar permanecem explicitamente indisponíveis.
 - Blockchain, carteiras e pagamento são simulados; nenhuma transação real será executada.
 
 Esses trade-offs priorizam fluxos verificáveis e arquitetura extensível dentro do prazo de 48 horas.
@@ -247,7 +266,19 @@ O carrinho usa a mesma chave de cache nos cabeçalhos, no painel de compra e na 
 
 ### Autenticação
 
-A feature `auth` concentrará sessão, login e cadastro. Favoritos e rotas privadas dependerão da sessão, sem acoplar autenticação aos componentes de NFT.
+A feature `auth` concentra contratos públicos, armazenamento do token, API, query de sessão, mutations, modal e formulário de perfil. O `AuthProvider` mantém a sessão transversal sem acoplar autenticação aos componentes de NFT.
+
+```text
+Formulário
+  → mutation
+  → Axios com Bearer token
+  → MSW valida credenciais e sessão
+  → banco mockado persistente
+  → resposta substitui o cache da sessão
+  → headers e rotas privadas reagem imediatamente
+```
+
+A rota `/profile` bloqueia os dados para visitantes e oferece o modal de login como recuperação. Alterações de e-mail e username repetem validação de unicidade no handler; troca de senha exige a senha atual e gera novo salt e hash.
 
 ### Tempo real
 
