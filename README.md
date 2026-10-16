@@ -4,7 +4,7 @@ Marketplace de NFTs desenvolvido como solução para o [desafio frontend da Jung
 
 O projeto tem como objetivo implementar os fluxos de descoberta, compra e gerenciamento da conta de um colecionador, com dados simulados, suporte a desktop e mobile e atenção a acessibilidade, performance e qualidade das interações.
 
-> Status: em desenvolvimento. A fundação da aplicação, o roteamento e o primeiro fluxo de dados do catálogo estão configurados com Axios, TanStack Query e MSW.
+> Status: em desenvolvimento. A fundação da aplicação e o primeiro catálogo responsivo estão configurados com Axios, TanStack Query, MSW e componentes React tipados.
 
 ## Tecnologias configuradas
 
@@ -65,6 +65,8 @@ O Vite exibirá no terminal o endereço local da aplicação.
 ```text
 .
 ├── public/
+│   ├── images/
+│   │   └── nfts/                  # Artes locais otimizadas do catálogo
 │   └── mockServiceWorker.js       # Service Worker gerado pelo MSW
 ├── src/
 │   ├── components/
@@ -74,6 +76,8 @@ O Vite exibirá no terminal o endereço local da aplicação.
 │   │   └── nfts/
 │   │       ├── api/
 │   │       │   └── list-nfts.ts   # Requisição do catálogo
+│   │       ├── components/
+│   │       │   └── nft-card.tsx   # Card apresentacional de NFT
 │   │       ├── queries/
 │   │       │   └── nft-list-query.ts
 │   │       └── types.ts           # Contratos dos NFTs e paginação
@@ -121,6 +125,8 @@ GET /api/nfts
 ```
 
 Ele devolve uma lista determinística de NFTs com metadados de paginação e uma latência simulada de 500 ms, permitindo observar o estado de carregamento da interface.
+
+A rota inicial apresenta os itens em cards semânticos e em um grid mobile-first de uma a quatro colunas. As imagens são servidas localmente em WebP para manter a demonstração independente de serviços externos.
 
 O fluxo atual é:
 

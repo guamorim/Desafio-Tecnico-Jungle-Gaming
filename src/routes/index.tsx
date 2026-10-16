@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
+import { NftCard } from "@/features/nfts/components/nft-card";
 import { nftListQueryOptions } from "@/features/nfts/queries/nft-list-query";
 
 export const Route = createFileRoute("/")({
@@ -38,15 +39,36 @@ function HomePage() {
   }
 
   return (
-    <main className="grid min-h-svh place-items-center bg-background px-6 text-foreground">
-      <section className="flex max-w-xl flex-col items-center gap-6 text-center">
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-          Jungle NFT Marketplace
-        </h1>
+    <main className="min-h-svh bg-background text-foreground">
+      <section
+        className="mx-auto w-full max-w-7xl px-6 py-12 sm:py-16 lg:px-8"
+        aria-labelledby="catalog-title"
+      >
+        <header className="mb-8 max-w-2xl space-y-3">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">
+            Curated NFT marketplace
+          </p>
 
-        <p className="text-muted-foreground">
-          {data.pagination.totalItems} NFTs available
-        </p>
+          <h1
+            id="catalog-title"
+            className="text-4xl font-semibold tracking-tight sm:text-5xl"
+          >
+            Jungle NFT Marketplace
+          </h1>
+
+          <p className="text-muted-foreground">
+            Explore {data.pagination.totalItems} digital collectibles from
+            independent creators.
+          </p>
+        </header>
+
+        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {data.items.map((nft) => (
+            <li key={nft.id}>
+              <NftCard nft={nft} />
+            </li>
+          ))}
+        </ul>
       </section>
     </main>
   );
