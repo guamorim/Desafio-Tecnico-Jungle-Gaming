@@ -45,6 +45,24 @@ export const nftCategoryOptions = [
 export type NftCategory =
   (typeof nftCategoryOptions)[number]["value"];
 
+export const nftCatalogTabOptions = [
+  {
+    value: "all",
+    label: "Todos os NFTs",
+  },
+  {
+    value: "new",
+    label: "Novos lançamentos",
+  },
+  {
+    value: "trending",
+    label: "Em alta",
+  },
+] as const satisfies readonly CatalogOption[];
+
+export type NftCatalogTab =
+  (typeof nftCatalogTabOptions)[number]["value"];
+
 export const nftNetworkOptions = [
   {
     value: "ethereum",
@@ -62,6 +80,24 @@ export const nftNetworkOptions = [
 
 export type NftNetwork =
   (typeof nftNetworkOptions)[number]["value"];
+
+export const nftSortOptions = [
+  {
+    value: "recent",
+    label: "Listados recentemente",
+  },
+  {
+    value: "price-asc",
+    label: "Menor preço",
+  },
+  {
+    value: "price-desc",
+    label: "Maior preço",
+  },
+] as const satisfies readonly CatalogOption[];
+
+export type NftCatalogSort =
+  (typeof nftSortOptions)[number]["value"];
 
 export const nftPriceLimits = {
   minimum: 0.02,

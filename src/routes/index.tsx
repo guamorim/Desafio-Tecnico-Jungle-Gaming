@@ -5,6 +5,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { HomeHero } from "@/components/home/home-hero";
 import { MobileHomeHeader } from "@/components/layout/mobile-home-header";
 import { Button } from "@/components/ui/button";
+import type {
+  NftCatalogSort,
+  NftCatalogTab,
+} from "@/features/nfts/catalog-filters";
 import {
   type NftCatalogFilters,
   validateNftCatalogSearch,
@@ -14,6 +18,8 @@ import { NftCatalogEmptyState } from "@/features/nfts/components/nft-catalog-emp
 import { MobileCatalogFilters } from "@/features/nfts/components/mobile-catalog-filters";
 import { NftCatalogPagination } from "@/features/nfts/components/nft-catalog-pagination";
 import { NftCatalogSkeleton } from "@/features/nfts/components/nft-catalog-skeleton";
+import { NftCatalogSortSelect } from "@/features/nfts/components/nft-catalog-sort";
+import { NftCatalogTabs } from "@/features/nfts/components/nft-catalog-tabs";
 import { NftCard } from "@/features/nfts/components/nft-card";
 import { nftListQueryOptions } from "@/features/nfts/queries/nft-list-query";
 
@@ -75,6 +81,36 @@ function HomePage() {
       ?.scrollIntoView({
         behavior: "smooth",
       });
+  }
+
+  function handleSortChange(
+    sort: NftCatalogSort,
+  ) {
+    void navigate({
+      search: (currentSearch) => ({
+        ...currentSearch,
+        sort:
+          sort === "recent"
+            ? undefined
+            : sort,
+        page: undefined,
+      }),
+    });
+  }
+
+  function handleTabChange(
+    tab: NftCatalogTab,
+  ) {
+    void navigate({
+      search: (currentSearch) => ({
+        ...currentSearch,
+        tab:
+          tab === "all"
+            ? undefined
+            : tab,
+        page: undefined,
+      }),
+    });
   }
 
   let catalogContent: ReactNode;
@@ -170,14 +206,33 @@ function HomePage() {
           </p>
         </header>
 
-        <div className="grid items-start gap-8 md:grid-cols-[14rem_minmax(0,1fr)] lg:grid-cols-[16rem_minmax(0,1fr)]">
-          <DesktopCatalogFilters
-            search={catalogSearch}
-            onApply={handleApplyFilters}
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <NftCatalogTabs
+            value={catalogSearch.tab ?? "all"}
+            onValueChange={handleTabChange}
           />
 
-          <div className="min-w-0">
-            {catalogContent}
+          <NftCatalogSortSelect
+            value={catalogSearch.sort ?? "recent"}
+            onValueChange={handleSortChange}
+          />
+        </div>
+
+        <div
+          id="nft-catalog-results"
+          role="tabpanel"
+          aria-labelledby={`catalog-tab-${catalogSearch.tab ?? "all"}`}
+          tabIndex={0}
+        >
+          <div className="grid items-start gap-8 md:grid-cols-[14rem_minmax(0,1fr)] lg:grid-cols-[16rem_minmax(0,1fr)]">
+            <DesktopCatalogFilters
+              search={catalogSearch}
+              onApply={handleApplyFilters}
+            />
+
+            <div className="min-w-0">
+              {catalogContent}
+            </div>
           </div>
         </div>
       </section>

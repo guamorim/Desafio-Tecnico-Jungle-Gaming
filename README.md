@@ -4,7 +4,7 @@ Marketplace de NFTs desenvolvido como solução para o [desafio frontend da Jung
 
 O projeto tem como objetivo implementar os fluxos de descoberta, compra e gerenciamento da conta de um colecionador, com dados simulados, suporte a desktop e mobile e atenção a acessibilidade, performance e qualidade das interações.
 
-> Status: em desenvolvimento. A fundação da aplicação e o catálogo responsivo estão configurados com hero adaptável, busca, filtros, multiseleção de categorias e paginação sincronizados com a URL, Axios, TanStack Query, MSW e componentes React tipados.
+> Status: em desenvolvimento. A fundação da aplicação e o catálogo responsivo estão configurados com hero adaptável, busca, filtros, multiseleção de categorias, abas, ordenação e paginação sincronizados com a URL, Axios, TanStack Query, MSW e componentes React tipados.
 
 ## Tecnologias configuradas
 
@@ -89,7 +89,9 @@ O Vite exibirá no terminal o endereço local da aplicação.
 │   │       │   ├── nft-card.tsx   # Card apresentacional de NFT
 │   │       │   ├── nft-catalog-empty-state.tsx
 │   │       │   ├── nft-catalog-pagination.tsx
-│   │       │   └── nft-catalog-skeleton.tsx
+│   │       │   ├── nft-catalog-skeleton.tsx
+│   │       │   ├── nft-catalog-sort.tsx
+│   │       │   └── nft-catalog-tabs.tsx
 │   │       ├── queries/
 │   │       │   └── nft-list-query.ts
 │   │       ├── catalog-filters.ts  # Opções e limites dos filtros
@@ -138,7 +140,9 @@ O endpoint disponível atualmente é:
 GET /api/nfts
 ```
 
-Ele devolve uma lista determinística de 12 NFTs e aceita busca textual, multiseleção de categorias, rede, preço mínimo, preço máximo e paginação. Uma latência simulada de 500 ms permite observar o estado de carregamento da interface.
+Ele devolve uma lista determinística de 12 NFTs e aceita busca textual, multiseleção de categorias, rede, preço mínimo, preço máximo, abas, ordenação e paginação. Uma latência simulada de 500 ms permite observar o estado de carregamento da interface.
+
+Cada NFT possui uma data fixa em `listedAt` e um indicador público `isTrending`. Esses dados mantêm as abas e a ordenação reproduzíveis independentemente do relógio do ambiente.
 
 A rota inicial apresenta os itens em cards semânticos e em um grid mobile-first de uma a três colunas. As imagens são servidas localmente em WebP para manter a demonstração independente de serviços externos.
 
@@ -151,6 +155,8 @@ A rota inicial apresenta os itens em cards semânticos e em um grid mobile-first
 | `network` | Filtra por Ethereum, Polygon ou Solana. |
 | `minimumPrice` | Define o preço mínimo em ETH. |
 | `maximumPrice` | Define o preço máximo em ETH. |
+| `tab` | Seleciona `new` ou `trending`; a ausência representa todos os NFTs. |
+| `sort` | Ordena por `price-asc` ou `price-desc`; a ausência representa itens recentes. |
 | `page` | Seleciona a página do catálogo. |
 | `scenario=empty` | Produz um estado vazio determinístico. |
 
@@ -170,6 +176,12 @@ Com o servidor de desenvolvimento em execução, os seguintes cenários podem se
 | `http://localhost:5173/?categories=generative,collectibles&network=ethereum` | Categorias combinadas com a rede Ethereum. |
 | `http://localhost:5173/?minimumPrice=0.5&maximumPrice=2` | NFTs entre 0,5 e 2 ETH. |
 | `http://localhost:5173/?categories=photography&network=ethereum` | Estado vazio produzido por filtros sem correspondência. |
+| `http://localhost:5173/?tab=new` | Seis NFTs publicados entre 7 e 12 de outubro de 2026. |
+| `http://localhost:5173/?tab=trending` | Seis NFTs marcados como itens em alta. |
+| `http://localhost:5173/?tab=trending&network=ethereum` | Itens em alta publicados na rede Ethereum. |
+| `http://localhost:5173/?sort=price-asc` | Catálogo ordenado do menor para o maior preço. |
+| `http://localhost:5173/?sort=price-desc` | Catálogo ordenado do maior para o menor preço. |
+| `http://localhost:5173/?categories=generative,collectibles&sort=price-asc` | Categorias combinadas e ordenadas por preço crescente. |
 | `http://localhost:5173/?q=nao-existe` | Estado vazio produzido por uma busca sem resultados. |
 | `http://localhost:5173/?scenario=empty` | Estado vazio após a latência simulada. |
 
@@ -177,7 +189,9 @@ Em telas mobile, a busca e o drawer de filtros atualizam os parâmetros da URL. 
 
 O filtro de categorias aceita múltiplas opções. As categorias são combinadas com lógica OR, enquanto categorias, rede, preço e busca são combinados entre si com lógica AND.
 
-O TanStack Router valida `page`, `q`, `categories`, `network`, `minimumPrice`, `maximumPrice`, `tab` e `scenario`. Categorias inválidas ou repetidas são eliminadas, e a ordem é normalizada conforme as opções do catálogo. O TanStack Query inclui o estado validado na chave do cache, o Axios encaminha os parâmetros para a API e o MSW aplica os filtros antes de dividir o resultado em páginas de 9 itens.
+O TanStack Router valida `page`, `q`, `categories`, `network`, `minimumPrice`, `maximumPrice`, `tab`, `sort` e `scenario`. Categorias inválidas ou repetidas são eliminadas, e valores padrão como `tab=all` e `sort=recent` são omitidos para manter URLs canônicas. O TanStack Query inclui o estado validado na chave do cache, e o Axios encaminha os parâmetros para a API.
+
+O MSW aplica busca, filtros e aba; em seguida ordena o conjunto resultante e somente então divide a resposta em páginas de 9 itens. Essa ordem impede que a ordenação produza páginas incompletas ou inconsistentes.
 
 O parâmetro da primeira página é omitido para manter a URL canônica: `/` representa a página 1 e `/?page=2` representa a página 2. Os controles de paginação preservam os demais filtros durante a navegação.
 

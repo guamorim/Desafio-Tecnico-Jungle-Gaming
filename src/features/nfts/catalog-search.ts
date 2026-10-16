@@ -1,21 +1,16 @@
 import {
+  nftCatalogTabOptions,
   nftCategoryOptions,
   nftNetworkOptions,
   nftPriceLimits,
+  nftSortOptions,
   type NftCategory,
+  type NftCatalogSort,
+  type NftCatalogTab,
   type NftNetwork,
 } from "./catalog-filters";
 
 export type NftCatalogScenario = "empty";
-
-const catalogTabs = [
-  "all",
-  "new",
-  "trending",
-] as const;
-
-export type NftCatalogTab =
-  (typeof catalogTabs)[number];
 
 export type NftCatalogSearch = {
   readonly categories?: readonly NftCategory[];
@@ -25,6 +20,7 @@ export type NftCatalogSearch = {
   readonly page?: number;
   readonly q?: string;
   readonly scenario?: NftCatalogScenario;
+  readonly sort?: NftCatalogSort;
   readonly tab?: NftCatalogTab;
 };
 
@@ -87,7 +83,20 @@ function isCatalogTab(
 ): value is NftCatalogTab {
   return (
     typeof value === "string" &&
-    catalogTabs.some((tab) => tab === value)
+    nftCatalogTabOptions.some(
+      (option) => option.value === value,
+    )
+  );
+}
+
+function isCatalogSort(
+  value: unknown,
+): value is NftCatalogSort {
+  return (
+    typeof value === "string" &&
+    nftSortOptions.some(
+      (option) => option.value === value,
+    )
   );
 }
 
@@ -157,6 +166,12 @@ export function validateNftCatalogSearch(
       ? search.tab
       : undefined;
 
+  const sort =
+    isCatalogSort(search.sort) &&
+    search.sort !== "recent"
+      ? search.sort
+      : undefined;
+
   const page = parsePage(search.page);
 
   const scenario =
@@ -169,6 +184,7 @@ export function validateNftCatalogSearch(
     ...(tab ? { tab } : {}),
     ...(categories ? { categories } : {}),
     ...(network ? { network } : {}),
+    ...(sort ? { sort } : {}),
     ...(minimumPrice !== undefined
       ? { minimumPrice }
       : {}),

@@ -1,5 +1,11 @@
 import { delay, http, HttpResponse } from "msw";
 
+import {
+  nftCatalogTabOptions,
+  nftSortOptions,
+  type NftCatalogSort,
+  type NftCatalogTab,
+} from "@/features/nfts/catalog-filters";
 import type {
   ListNftsResponse,
   NftSummary,
@@ -7,6 +13,9 @@ import type {
 import { nftFixtures } from "./fixtures/nfts";
 
 const pageSize = 9;
+const newReleaseCutoff = Date.parse(
+  "2026-10-07T00:00:00.000Z",
+);
 
 type NftFilters = {
   readonly categories: readonly string[];
@@ -14,6 +23,7 @@ type NftFilters = {
   readonly minimumPrice: number | undefined;
   readonly network: string | null;
   readonly searchQuery: string;
+  readonly tab: NftCatalogTab;
 };
 
 function parseOptionalNumber(
@@ -35,6 +45,26 @@ function parseList(value: string | null) {
     ?.split(",")
     .map((item) => item.trim())
     .filter(Boolean) ?? [];
+}
+
+function parseSort(
+  value: string | null,
+): NftCatalogSort {
+  return (
+    nftSortOptions.find(
+      (option) => option.value === value,
+    )?.value ?? "recent"
+  );
+}
+
+function parseTab(
+  value: string | null,
+): NftCatalogTab {
+  return (
+    nftCatalogTabOptions.find(
+      (option) => option.value === value,
+    )?.value ?? "all"
+  );
 }
 
 function parsePage(value: string | null) {
@@ -72,6 +102,32 @@ function paginateNfts(
   };
 }
 
+function sortNfts(
+  items: readonly NftSummary[],
+  sort: NftCatalogSort,
+) {
+  return [...items].sort((left, right) => {
+    if (sort === "price-asc") {
+      return (
+        Number(left.startingPriceEth) -
+        Number(right.startingPriceEth)
+      );
+    }
+
+    if (sort === "price-desc") {
+      return (
+        Number(right.startingPriceEth) -
+        Number(left.startingPriceEth)
+      );
+    }
+
+    return (
+      Date.parse(right.listedAt) -
+      Date.parse(left.listedAt)
+    );
+  });
+}
+
 function normalizeSearchValue(value: string) {
   return value
     .normalize("NFD")
@@ -95,6 +151,24 @@ function matchesNftSearch(
   ).includes(searchQuery);
 }
 
+function matchesCatalogTab(
+  nft: NftSummary,
+  tab: NftCatalogTab,
+) {
+  if (tab === "new") {
+    return (
+      Date.parse(nft.listedAt) >=
+      newReleaseCutoff
+    );
+  }
+
+  if (tab === "trending") {
+    return nft.isTrending;
+  }
+
+  return true;
+}
+
 function matchesNftFilters(
   nft: NftSummary,
   filters: NftFilters,
@@ -104,6 +178,7 @@ function matchesNftFilters(
   );
 
   return (
+    matchesCatalogTab(nft, filters.tab) &&
     (filters.searchQuery === "" ||
       matchesNftSearch(
         nft,
@@ -130,6 +205,9 @@ export const handlers = [
       url.searchParams.get("page"),
     );
     const scenario = url.searchParams.get("scenario");
+    const sort = parseSort(
+      url.searchParams.get("sort"),
+    );
     const filters = {
       categories: parseList(
         url.searchParams.get("categories"),
@@ -143,6 +221,9 @@ export const handlers = [
       network: url.searchParams.get("network"),
       searchQuery: normalizeSearchValue(
         url.searchParams.get("q") ?? "",
+      ),
+      tab: parseTab(
+        url.searchParams.get("tab"),
       ),
     } satisfies NftFilters;
 
@@ -158,8 +239,13 @@ export const handlers = [
       (nft) => matchesNftFilters(nft, filters),
     );
 
+    const sortedNfts = sortNfts(
+      matchingNfts,
+      sort,
+    );
+
     return HttpResponse.json(
-      paginateNfts(matchingNfts, page),
+      paginateNfts(sortedNfts, page),
     );
   }),
 ];

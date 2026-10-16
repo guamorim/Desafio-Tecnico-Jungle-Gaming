@@ -11,9 +11,11 @@ export type NftSummary = {
   readonly category: NftCategory;
   readonly network: NftNetwork;
   readonly imageUrl: string;
+  readonly listedAt: string;
   readonly startingPriceEth: string;
   readonly availableQuantity: number;
   readonly isFavorite: boolean;
+  readonly isTrending: boolean;
   readonly version: number;
 };
 
