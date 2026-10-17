@@ -439,6 +439,14 @@ VITE_ENABLE_MOCKS=false
 
 Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite precisam começar com `VITE_`.
 
+## Deploy na Vercel
+
+O projeto pode ser importado diretamente do GitHub usando o preset do Vite. O build usa `npm run build` e publica a pasta `dist`.
+
+O arquivo `vercel.json` encaminha rotas que não representam arquivos estáticos para `index.html`, permitindo acesso direto e atualização de páginas como `/nfts/nft-aurora-ape`, `/checkout`, `/profile` e `/orders/$orderId`.
+
+Não defina `VITE_ENABLE_MOCKS=false` no ambiente da demonstração: os mocks REST e Socket.IO precisam permanecer ativos no build publicado. Depois do deploy, valide a página inicial, o acesso direto a uma rota interna, o refresh dessa rota e uma atualização em tempo real. A URL pública deve ser adicionada a este README antes da entrega.
+
 ## Decisões atuais
 
 - O Figma fornece referências desktop para perfil e carteiras, mas não define essas telas no mobile. As versões mobile foram projetadas pelo autor do projeto, preservando a hierarquia e o sistema visual das referências fornecidas.
