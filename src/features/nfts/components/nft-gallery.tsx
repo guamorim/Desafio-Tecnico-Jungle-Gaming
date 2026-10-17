@@ -58,6 +58,9 @@ export function NftGallery({
               alt=""
               width={144}
               height={144}
+              loading="lazy"
+              decoding="async"
+              fetchPriority="low"
               className="size-full object-cover"
             />
           </button>

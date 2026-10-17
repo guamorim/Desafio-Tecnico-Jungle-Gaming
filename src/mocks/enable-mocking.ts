@@ -1,5 +1,10 @@
+import { isCommonAssetRequest } from "msw";
+
+import { worker } from "./browser";
+
 let mockingStartPromise: Promise<void> | undefined;
 let mockingRestorePromise: Promise<void> | undefined;
+let realtimeMockingPromise: Promise<void> | undefined;
 let lastMockingActivationAt = 0;
 
 const mockingActivationFreshTime = 10_000;
@@ -14,14 +19,6 @@ function isMockingEnabledMessage(value: unknown) {
 }
 
 async function startMocking() {
-  const [
-    { isCommonAssetRequest },
-    { worker },
-  ] = await Promise.all([
-    import("msw"),
-    import("./browser"),
-  ]);
-
   await worker.start({
     onUnhandledRequest(request, print) {
       if (
@@ -51,6 +48,26 @@ export function enableMocking() {
   );
 
   return mockingStartPromise;
+}
+
+export function enableRealtimeMocking() {
+  if (import.meta.env.VITE_ENABLE_MOCKS === "false") {
+    return Promise.resolve();
+  }
+
+  realtimeMockingPromise ??= Promise.all([
+    enableMocking(),
+    import("./realtime-handlers"),
+  ])
+    .then(([, { realtimeHandlers }]) => {
+      worker.use(...realtimeHandlers);
+    })
+    .catch((error: unknown) => {
+      realtimeMockingPromise = undefined;
+      throw error;
+    });
+
+  return realtimeMockingPromise;
 }
 
 async function activateMockingClient() {

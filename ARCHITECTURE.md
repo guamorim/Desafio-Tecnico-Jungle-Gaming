@@ -397,7 +397,13 @@ Os testes observam a interface e os contratos acessíveis, restringindo seletore
 
 Cada teste recebe um contexto de navegador isolado, enquanto fixtures determinísticas do MSW tornam os resultados reproduzíveis. Falhas preservam screenshot e trace, e o relatório HTML permanece como artefato local.
 
-A cobertura valida loading, vazio, erro recuperável, conflito de estoque e sucesso com cenários determinísticos do MSW. A regressão visual compara oito baselines versionadas de início, detalhe, carrinho e pagamento em desktop e mobile. Lighthouse será executado sobre o mesmo build de produção.
+A cobertura valida loading, vazio, erro recuperável, conflito de estoque e sucesso com cenários determinísticos do MSW. A regressão visual compara oito baselines versionadas de início, detalhe, carrinho e pagamento em desktop e mobile.
+
+O Lighthouse CI executa sobre o mesmo build de produção e cenário padrão do MSW. As configurações versionadas separam os perfis desktop e mobile, auditam início e detalhe três vezes e persistem cada resultado em HTML e JSON. Um script consolida as medianas das categorias e de LCP, CLS e TBT, registra ferramentas e ambiente e aplica as metas somente depois que os dois perfis foram coletados, preservando diagnósticos mesmo quando uma meta falha.
+
+A medição final atingiu todas as metas no desktop: início com `99/100/96/92` e detalhe com `98/97/96/92` para Performance, Accessibility, Best Practices e SEO. No mobile, início registrou `78/100/96/92` e detalhe `75/97/96/92`. Os respectivos LCPs móveis foram `4199 ms` e `4897 ms`; CLS permaneceu em `0.005` e `0.000`, e TBT em `40 ms` e `24 ms`.
+
+O diagnóstico associa a diferença de Performance móvel ao atraso de renderização do LCP: 89% na home e 71% no detalhe. A entrega inicializa no navegador a SPA e a infraestrutura completa da API simulada pelo MSW, incluindo persistência e interceptadores usados pelos fluxos testados. O detalhe também aguarda a resposta REST autoritativa antes de inserir a imagem principal. A auditoria final preserva imagens, Space Mono, mocks e funcionalidades reais; nenhuma variante reduzida foi criada para o Lighthouse. Em produção com backend, a remoção do MSW do bundle e SSR ou prerenderização das rotas públicas são as evoluções indicadas para reduzir esse caminho crítico.
 
 ## Regras para novas features
 

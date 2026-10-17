@@ -21,7 +21,7 @@ export const Route = createFileRoute(
 
 function NftDetailPage() {
   const { nftId } = Route.useParams();
-  const { session, isSessionPending } = useAuth();
+  const { session } = useAuth();
   const cartOwnerId = useCartOwnerId();
   const { data: cart } = useQuery(
     cartQueryOptions(cartOwnerId),
@@ -36,7 +36,6 @@ function NftDetailPage() {
       nftId,
       session?.user.id ?? null,
     ),
-    enabled: !isSessionPending,
   });
 
   const cartItemCount = cart?.totalQuantity ?? 0;

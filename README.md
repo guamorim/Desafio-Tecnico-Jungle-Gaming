@@ -155,8 +155,9 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - Space Mono
 - ESLint
 - Playwright
+- Lighthouse CI
 
-Lighthouse faz parte das próximas etapas do desafio. O Playwright cobre os fluxos concluídos em Chromium desktop e mobile.
+O Playwright cobre os fluxos concluídos em Chromium desktop e mobile. O Lighthouse CI audita o build de produção em ambos os perfis.
 
 ## Requisitos
 
@@ -195,6 +196,10 @@ O Vite exibirá no terminal o endereço local da aplicação, normalmente `http:
 | `npm run test:e2e:report` | Abre o último relatório HTML. |
 | `npm run test:e2e:visual` | Compara início, detalhe, carrinho e pagamento com as baselines visuais. |
 | `npm run test:e2e:visual:update` | Gera ou atualiza intencionalmente as baselines visuais. |
+| `npm run lighthouse` | Executa três auditorias da página inicial e do detalhe em desktop e mobile, gera relatórios e verifica as medianas. |
+| `npm run lighthouse:desktop` | Executa somente as medições desktop sobre um build existente. |
+| `npm run lighthouse:mobile` | Executa somente as medições mobile sobre um build existente. |
+| `npm run lighthouse:summary` | Recalcula o resumo e as metas a partir dos relatórios existentes. |
 
 ## Estrutura principal
 
@@ -205,6 +210,9 @@ public/
 
 tests/e2e/                       # Testes de navegador com Playwright
 playwright.config.ts             # Viewports, servidor e artefatos E2E
+lighthouse/                      # Perfis e metas versionadas do Lighthouse CI
+lighthouse-reports/              # Relatórios HTML/JSON e resumo das medianas
+scripts/summarize-lighthouse.mjs # Consolida categorias, LCP, CLS e TBT
 
 src/
 ├── components/
@@ -435,8 +443,6 @@ Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite 
 
 ## Próximas etapas
 
-- Auditoria Lighthouse e otimização do bundle.
-- Revisão final da documentação.
 - Deploy público.
 
 ## Qualidade
@@ -447,6 +453,7 @@ A base atual é validada continuamente com:
 npm run lint
 npm run build
 npm run test:e2e
+npm run lighthouse
 ```
 
 A suíte possui 57 cenários validados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 114 execuções aprovadas. Ela cobre:
@@ -467,6 +474,25 @@ A suíte possui 57 cenários validados nos projetos Chromium desktop (`1440 × 9
 - regressão visual da homepage, detalhe, carrinho e pagamento com oito baselines versionadas.
 
 O Playwright gera o build de produção e inicia o preview com MSW antes dos testes. Falhas preservam screenshot e trace; resultados e relatórios HTML permanecem como artefatos locais e não são versionados.
+
+### Lighthouse
+
+A auditoria usa o build otimizado, o cenário padrão do MSW e as rotas `/` e `/nfts/nft-aurora-ape`. Cada rota recebe três medições em desktop e três em mobile. O resumo calcula a mediana independentemente para Performance, Accessibility, Best Practices, SEO, LCP, CLS e TBT.
+
+As metas são Performance ≥ 90, Accessibility ≥ 95, Best Practices ≥ 95 e SEO ≥ 90. Todos os relatórios HTML/JSON são gravados em `lighthouse-reports/`; `summary.md` registra as medianas, versões, ambiente e condições. A auditoria coleta todos os resultados antes de retornar erro por uma meta não atingida.
+
+Resultados finais da auditoria executada em 17 de outubro de 2026:
+
+| Perfil | Página | Performance | Accessibility | Best Practices | SEO | LCP | CLS | TBT |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Desktop | Início | 99 | 100 | 96 | 92 | 896 ms | 0.000 | 0 ms |
+| Desktop | Detalhe do NFT | 98 | 97 | 96 | 92 | 1002 ms | 0.000 | 0 ms |
+| Mobile | Início | 78 | 100 | 96 | 92 | 4199 ms | 0.005 | 40 ms |
+| Mobile | Detalhe do NFT | 75 | 97 | 96 | 92 | 4897 ms | 0.000 | 24 ms |
+
+Todas as metas foram atingidas no desktop. No mobile, Accessibility, Best Practices e SEO também passaram; somente Performance ficou abaixo de 90. O diagnóstico do Lighthouse atribui 89% do LCP da página inicial e 71% do LCP do detalhe ao atraso de renderização. O caminho crítico inclui o bootstrap integral da SPA e do MSW, que inicializa a API REST simulada, banco persistente, sessão, carrinho e interceptadores usados pelos fluxos funcionais. No detalhe, a imagem principal ainda depende da resposta autoritativa da API para entrar na árvore visual, embora seja antecipada e não apresente desperdício apontado pela auditoria.
+
+Os valores baixos de TBT e CLS mostram que o problema não é bloqueio prolongado da thread principal nem instabilidade visual. O JavaScript não utilizado identificado na carga inicial concentra-se no runtime e nos handlers necessários para manter a demonstração funcional sem backend. Os relatórios foram mantidos sem desabilitar mocks, trocar fontes, omitir imagens ou simplificar funcionalidades exclusivamente para elevar a pontuação. Em uma implantação com backend real, o MSW sairia do bundle de produção; renderização no servidor ou prerenderização das rotas públicas reduziria adicionalmente o LCP móvel.
 
 Um arquivo específico pode ser executado durante o desenvolvimento:
 

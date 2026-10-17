@@ -1,0 +1,74 @@
+[
+  {
+    "url": "http://127.0.0.1:4173/",
+    "isRepresentativeRun": false,
+    "htmlPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_07_22_50.report.html",
+    "jsonPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_07_22_50.report.json",
+    "summary": {
+      "performance": 0.99,
+      "accessibility": 1,
+      "best-practices": 0.96,
+      "seo": 0.92
+    }
+  },
+  {
+    "url": "http://127.0.0.1:4173/",
+    "isRepresentativeRun": false,
+    "htmlPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_07_23_23.report.html",
+    "jsonPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_07_23_23.report.json",
+    "summary": {
+      "performance": 0.99,
+      "accessibility": 1,
+      "best-practices": 0.96,
+      "seo": 0.92
+    }
+  },
+  {
+    "url": "http://127.0.0.1:4173/nfts/nft-aurora-ape",
+    "isRepresentativeRun": false,
+    "htmlPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_07_23_38.report.html",
+    "jsonPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_07_23_38.report.json",
+    "summary": {
+      "performance": 0.98,
+      "accessibility": 0.97,
+      "best-practices": 0.96,
+      "seo": 0.92
+    }
+  },
+  {
+    "url": "http://127.0.0.1:4173/nfts/nft-aurora-ape",
+    "isRepresentativeRun": false,
+    "htmlPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_07_24_07.report.html",
+    "jsonPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_07_24_07.report.json",
+    "summary": {
+      "performance": 0.98,
+      "accessibility": 0.97,
+      "best-practices": 0.96,
+      "seo": 0.92
+    }
+  },
+  {
+    "url": "http://127.0.0.1:4173/",
+    "isRepresentativeRun": true,
+    "htmlPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_07_23_07.report.html",
+    "jsonPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_07_23_07.report.json",
+    "summary": {
+      "performance": 0.99,
+      "accessibility": 1,
+      "best-practices": 0.96,
+      "seo": 0.92
+    }
+  },
+  {
+    "url": "http://127.0.0.1:4173/nfts/nft-aurora-ape",
+    "isRepresentativeRun": true,
+    "htmlPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_07_23_53.report.html",
+    "jsonPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_07_23_53.report.json",
+    "summary": {
+      "performance": 0.98,
+      "accessibility": 0.97,
+      "best-practices": 0.96,
+      "seo": 0.92
+    }
+  }
+]

@@ -45,10 +45,6 @@ import {
 } from "./mock-database";
 import { findMockCoupon } from "./fixtures/coupons";
 import { walletHandlers } from "./wallet-handlers";
-import {
-  emitOrderUpdated,
-  realtimeHandlers,
-} from "./realtime-handlers";
 
 const pageSize = 9;
 const newReleaseCutoff = Date.parse(
@@ -810,7 +806,6 @@ function resolveOrderIfDue(
 export const handlers = [
   ...authHandlers,
   ...walletHandlers,
-  ...realtimeHandlers,
   http.get("/api/nfts", async ({ request }) => {
     const url = new URL(request.url);
     const page = parsePage(
@@ -839,7 +834,7 @@ export const handlers = [
       ),
     } satisfies NftFilters;
 
-    await delay(scenario === "slow" ? 1_800 : 500);
+    await delay(scenario === "slow" ? 1_800 : 0);
 
     if (
       scenario === "recoverable-error" &&
@@ -877,7 +872,7 @@ export const handlers = [
   http.get(
     "/api/nfts/:nftId",
     async ({ params, request }) => {
-      await delay(500);
+      await delay(0);
 
       const nftId = String(params.nftId);
       const nft = getMockDatabase().nfts.find(
@@ -1769,8 +1764,12 @@ export const handlers = [
       const currentOrder = getMockDatabase().orders[order.id];
 
       if (!currentOrder) return;
-      emitOrderUpdated(
-        toOrder(resolveOrderIfDue(currentOrder)),
+      void import("./realtime-handlers").then(
+        ({ emitOrderUpdated }) => {
+          emitOrderUpdated(
+            toOrder(resolveOrderIfDue(currentOrder)),
+          );
+        },
       );
     }, 1_600);
 

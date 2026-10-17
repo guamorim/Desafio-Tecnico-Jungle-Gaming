@@ -141,6 +141,7 @@ export function NftEditionPurchasePanel({
                   name="nft-edition"
                   value={edition.id}
                   checked={isSelected}
+                  disabled={cartOwnerId === null}
                   className="sr-only"
                   onChange={() => {
                     addItemMutation.reset();
@@ -194,7 +195,10 @@ export function NftEditionPurchasePanel({
                   type="button"
                   size="icon-sm"
                   aria-label="Diminuir quantidade"
-                  disabled={normalizedQuantity <= 1}
+                  disabled={
+                    cartOwnerId === null ||
+                    normalizedQuantity <= 1
+                  }
                   onClick={() => {
                     addItemMutation.reset();
                     setQuantitySelection({
@@ -219,6 +223,7 @@ export function NftEditionPurchasePanel({
                   size="icon-sm"
                   aria-label="Aumentar quantidade"
                   disabled={
+                    cartOwnerId === null ||
                     normalizedQuantity >= purchaseLimit
                   }
                   onClick={() => {

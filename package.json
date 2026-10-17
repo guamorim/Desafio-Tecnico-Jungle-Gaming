@@ -12,7 +12,11 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
     "test:e2e:visual": "playwright test tests/e2e/visual.spec.ts",
-    "test:e2e:visual:update": "playwright test tests/e2e/visual.spec.ts --update-snapshots"
+    "test:e2e:visual:update": "playwright test tests/e2e/visual.spec.ts --update-snapshots",
+    "lighthouse:desktop": "lhci autorun --config=./lighthouse/lighthouserc.desktop.cjs",
+    "lighthouse:mobile": "lhci autorun --config=./lighthouse/lighthouserc.mobile.cjs",
+    "lighthouse:summary": "node ./scripts/summarize-lighthouse.mjs",
+    "lighthouse": "npm run build && npm run lighthouse:desktop && npm run lighthouse:mobile && npm run lighthouse:summary"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -34,6 +38,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@lhci/cli": "^0.15.1",
     "@mswjs/socket.io-binding": "^0.2.0",
     "@playwright/test": "^1.64.1",
     "@tanstack/react-query-devtools": "^5.104.3",

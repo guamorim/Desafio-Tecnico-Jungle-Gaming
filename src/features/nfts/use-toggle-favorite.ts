@@ -10,7 +10,11 @@ import type { NftSummary } from "./types";
 
 export function useToggleFavorite(nft: NftSummary) {
   const queryClient = useQueryClient();
-  const { session, openLogin } = useAuth();
+  const {
+    session,
+    isSessionPending,
+    openLogin,
+  } = useAuth();
   const mutation = useMutation(
     toggleFavoriteMutationOptions(
       queryClient,
@@ -20,6 +24,10 @@ export function useToggleFavorite(nft: NftSummary) {
 
   function toggleFavorite() {
     mutation.reset();
+
+    if (isSessionPending) {
+      return;
+    }
 
     if (!session) {
       openLogin();
@@ -31,7 +39,8 @@ export function useToggleFavorite(nft: NftSummary) {
 
   return {
     error: mutation.error,
-    isPending: mutation.isPending,
+    isPending:
+      isSessionPending || mutation.isPending,
     toggleFavorite,
   };
 }

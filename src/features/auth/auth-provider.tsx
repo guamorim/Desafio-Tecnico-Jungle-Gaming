@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useEffect,
   useRef,
   useState,
@@ -16,14 +18,17 @@ import { nftViewerQueryKey } from "@/features/nfts/queries/nft-query-keys";
 import { ordersUserQueryKey } from "@/features/checkout/queries/order-query";
 import { RealtimeProvider } from "@/features/realtime/realtime-provider";
 import { walletsQueryKey } from "@/features/wallets/queries/wallets-query";
-import {
-  AuthDialog,
-  type AuthMode,
-} from "./components/auth-dialog";
+import type { AuthMode } from "./components/auth-dialog";
 import {
   sessionQueryKey,
   sessionQueryOptions,
 } from "./queries/session-query";
+
+const AuthDialog = lazy(() =>
+  import("./components/auth-dialog").then(
+    ({ AuthDialog: Dialog }) => ({ default: Dialog }),
+  ),
+);
 
 export function AuthProvider({
   children,
@@ -146,12 +151,16 @@ export function AuthProvider({
       <RealtimeProvider session={data?.session ?? null}>
         {children}
 
-        <AuthDialog
-          mode={authMode ?? "login"}
-          open={authMode !== null}
-          onModeChange={setAuthMode}
-          onOpenChange={handleAuthOpenChange}
-        />
+        {authMode !== null && (
+          <Suspense fallback={null}>
+            <AuthDialog
+              mode={authMode}
+              open
+              onModeChange={setAuthMode}
+              onOpenChange={handleAuthOpenChange}
+            />
+          </Suspense>
+        )}
       </RealtimeProvider>
     </AuthContext.Provider>
   );

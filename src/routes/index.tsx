@@ -41,7 +41,7 @@ function HomePage() {
   const navigate = Route.useNavigate();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const cartOwnerId = useCartOwnerId();
-  const { session, isSessionPending } = useAuth();
+  const { session } = useAuth();
 
   const { data: cart } = useQuery(
     cartQueryOptions(cartOwnerId),
@@ -58,7 +58,6 @@ function HomePage() {
         catalogSearch,
         session?.user.id ?? null,
       ),
-      enabled: !isSessionPending,
     },
   );
 
