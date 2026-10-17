@@ -2,11 +2,11 @@
 
 Marketplace de NFTs desenvolvido como solução para o [desafio frontend da Jungle](https://github.com/junglegaming/frontend-challenge).
 
-A aplicação simula a descoberta e a compra de NFTs com dados determinísticos, interface responsiva, autenticação persistente e uma arquitetura preparada para checkout e eventos em tempo real.
+A aplicação simula a descoberta e a compra de NFTs com dados determinísticos, interface responsiva, autenticação persistente, checkout idempotente e uma arquitetura preparada para eventos em tempo real.
 
 As principais decisões técnicas e os pontos de extensão estão documentados em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-> Status: em desenvolvimento. Homepage, detalhes dos NFTs, carrinho, autenticação, perfil privado, avatar, favoritos e cadastro de carteiras estão funcionais e responsivos. Checkout, conexão de carteira e tempo real fazem parte das próximas etapas.
+> Status: em desenvolvimento. Homepage, detalhes dos NFTs, carrinho, autenticação, perfil privado, avatar, favoritos, carteiras e checkout com pedidos estão funcionais e responsivos. Tempo real, auditoria final e deploy fazem parte das próximas etapas.
 
 ## Funcionalidades implementadas
 
@@ -109,7 +109,24 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - Persistência no `localStorage` e isolamento entre contas.
 - Cache remoto separado por usuário e removido em logout, troca de conta ou expiração.
 - Reprodução da referência desktop e layout mobile autoral, com navegação própria da conta e formulários em cartões, pois o Figma não fornece essa tela em viewport móvel.
-- Estado de conexão preparado no domínio; conectar, recusar e desconectar serão integrados ao checkout.
+- Conexão, recusa e desconexão simuladas no checkout, com rede e provedor selecionáveis.
+
+### Pagamento e pedidos
+
+- Rota privada e responsiva `/checkout`, acessível pelo resumo do carrinho.
+- Revisão dos NFTs, edições, quantidades, subtotal, desconto, taxa de rede e total devolvidos pela API.
+- Seleção de carteira cadastrada, rede e conector antes da confirmação.
+- Conexão e desconexão mockadas, incluindo cenário determinístico de recusa pelo usuário.
+- Revalidação de versão, preço e disponibilidade do carrinho no momento da compra.
+- Criação de pedidos protegida por `Idempotency-Key`, impedindo cobranças duplicadas em novas tentativas.
+- Recuperação da mesma tentativa depois de timeout sem criar um segundo pedido.
+- Estados persistentes `pending`, `confirmed` e `refused` por usuário.
+- Confirmação assíncrona consultada por polling e preservada após recarregar a página.
+- Baixa de estoque e limpeza dos itens comprados somente após a confirmação.
+- Carrinho preservado quando o pagamento é recusado.
+- Rota privada `/orders/$orderId`, isolada por conta, com recibo, snapshot financeiro e transação simulada.
+- Cenários mockados por query string para validação: `wallet-rejected`, `payment-refused` e `order-timeout`.
+- Nenhuma carteira real, blockchain ou cobrança externa é utilizada.
 
 ## Tecnologias
 
@@ -204,6 +221,12 @@ src/
 │   │   ├── catalog-filters.ts
 │   │   ├── catalog-search.ts
 │   │   └── types.ts
+│   ├── checkout/
+│   │   ├── api/                 # Criação e consulta de pedidos
+│   │   ├── components/          # Pagamento e confirmação responsivos
+│   │   ├── mutations/           # Criação idempotente do pedido
+│   │   ├── queries/             # Polling do estado do pedido
+│   │   └── types.ts
 │   └── wallets/
 │       ├── api/                 # Consulta, criação e edição de carteiras
 │       ├── components/          # Formulários responsivos
@@ -225,9 +248,11 @@ src/
 └── routes/
     ├── __root.tsx               # Layout raiz e rodapé
     ├── cart.tsx                 # Carrinho
+    ├── checkout.tsx             # Pagamento e conexão da carteira
     ├── favorites.tsx            # Lista de interesse privada
     ├── index.tsx                # Homepage
     ├── nfts/$nftId.tsx          # Detalhes de um NFT
+    ├── orders/$orderId.tsx      # Confirmação privada do pedido
     ├── profile.tsx              # Perfil privado
     └── wallets.tsx              # Carteiras privadas
 ```
@@ -279,6 +304,10 @@ DELETE /api/auth/profile/avatar
 GET  /api/wallets
 POST /api/wallets
 PATCH /api/wallets/:walletId
+POST /api/wallets/:walletId/connection
+DELETE /api/wallets/:walletId/connection
+POST /api/orders
+GET  /api/orders/:orderId
 ```
 
 Cupons determinísticos disponíveis para validação manual:
@@ -293,7 +322,7 @@ As rotas do carrinho usam o header `X-Cart-Owner-Id`. Para visitantes anônimos,
 
 Ao autenticar, a API mescla os itens e o cupom do visitante no carrinho da conta, respeita os limites vigentes e esvazia o carrinho anônimo somente depois da transferência. Ao trocar de conta, a aplicação troca também a query do carrinho. Logout e expiração retornam à identidade anônima; autenticar novamente a mesma conta recupera seu carrinho persistido sem expor os itens de outro usuário.
 
-As rotas privadas usam `Authorization: Bearer <token>`. O interceptor do Axios anexa o token automaticamente. Favoritos e carteiras são derivados exclusivamente da sessão autenticada e persistidos por `userId`; o cliente não escolhe a conta que será alterada. Usuários, sessões, avatares e carteiras são persistidos somente no navegador para fins de demonstração; limpar os dados do site restaura as fixtures.
+As rotas privadas usam `Authorization: Bearer <token>`. O interceptor do Axios anexa o token automaticamente. Favoritos, carteiras e pedidos são derivados exclusivamente da sessão autenticada e persistidos por `userId`; o cliente não escolhe a conta que será alterada. Usuários, sessões, avatares, carteiras, pedidos e estoque são persistidos somente no navegador para fins de demonstração; limpar os dados do site restaura as fixtures.
 
 Contas determinísticas disponíveis para teste:
 
@@ -353,6 +382,8 @@ Com o servidor executando em `http://localhost:5173`:
 | `/cart` | Carrinho persistente, edição de itens e resumo financeiro. |
 | `/profile` | Perfil privado; solicita login quando não há sessão. |
 | `/wallets` | Cadastro e edição das carteiras principal e secundária. |
+| `/checkout` | Revisão do pagamento, seleção e conexão da carteira. |
+| `/orders/$orderId` | Acompanhamento e confirmação privada do pedido. |
 
 Para validar autenticação, crie também uma conta nova. Ela permanecerá disponível após recarregar a página no mesmo navegador. Alterar a senha no perfil exige a senha atual e o logout permite validar o novo acesso.
 
@@ -380,15 +411,15 @@ Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite 
 - Contas, sessões e alterações de perfil são locais e não representam autenticação de produção.
 - Login social e recuperação de senha permanecem indisponíveis nesta etapa.
 - Avatares são armazenados como Data URL no banco mockado local e limitados a 1 MB para respeitar a capacidade do `localStorage`.
-- O cadastro de carteiras está funcional; conexão, recusa e desconexão serão implementadas junto ao checkout.
-- O projeto não realiza transações reais nem depende de blockchain, extensão de carteira ou gateway de pagamento.
+- O cadastro, a conexão, a recusa e a desconexão de carteiras são simulados e funcionais.
+- O projeto não realiza transações reais nem depende de blockchain, extensão de carteira ou gateway de pagamento; o link do explorador aponta para uma transação fictícia na Sepolia.
+- O Figma não fornece confirmação mobile. Essa tela foi projetada de forma autoral a partir do recibo desktop e do sistema visual mobile existente.
 
 ## Próximas etapas
 
-- Checkout, pagamento simulado e confirmação.
-- Conexão, recusa e desconexão mockadas de carteiras.
 - Atualizações de estoque com Socket.IO.
 - Cenários adicionais de falha e regressão visual com Playwright.
+- Auditoria Lighthouse, revisão final da documentação e deploy.
 - Auditoria e documentação do Lighthouse.
 - Deploy público.
 
@@ -402,7 +433,7 @@ npm run build
 npm run test:e2e
 ```
 
-A suíte possui 36 cenários executados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 72 execuções. Ela cobre:
+A suíte possui 43 cenários validados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 86 execuções aprovadas. Ela cobre:
 
 - carregamento e navegação responsiva da homepage;
 - pesquisa, filtros combinados, ordenação, abas, paginação, histórico e estado vazio do catálogo;
@@ -414,6 +445,7 @@ A suíte possui 36 cenários executados nos projetos Chromium desktop (`1440 × 
 - edição do perfil, rejeição da senha atual incorreta e troca de senha com novo login.
 - upload, persistência, validação e remoção de avatar;
 - acesso privado, criação, edição, persistência, validação e isolamento de carteiras.
+- pagamento protegido, conexão, recusa e desconexão de carteira, pedido confirmado ou recusado, retomada idempotente após timeout e isolamento entre contas.
 
 O Playwright gera o build de produção e inicia o preview com MSW antes dos testes. Falhas preservam screenshot e trace; resultados e relatórios HTML permanecem como artefatos locais e não são versionados.
 

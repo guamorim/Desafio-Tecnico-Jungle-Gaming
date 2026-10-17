@@ -20,6 +20,16 @@ export type WalletConnectionStatus =
   | "connected"
   | "disconnected";
 
+export type WalletConnectionScenario =
+  | "success"
+  | "rejected";
+
+export type ConnectWalletInput = {
+  readonly network: WalletNetwork;
+  readonly provider: WalletProvider;
+  readonly scenario?: WalletConnectionScenario;
+};
+
 export type CollectorWallet = {
   readonly id: string;
   readonly label: string;

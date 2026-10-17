@@ -46,6 +46,7 @@ src/
 │   ├── nfts/
 │   ├── cart/
 │   ├── auth/
+│   ├── checkout/
 │   └── wallets/
 ├── lib/             # Infraestrutura compartilhada
 ├── mocks/           # API REST simulada e dados determinísticos
@@ -83,7 +84,7 @@ features/cart/
 └── types.ts
 ```
 
-Essa separação permite evoluir o `checkout` sem concentrar toda a aplicação em pastas genéricas de componentes e serviços. A feature `auth` reúne contratos, sessão, formulários, API, perfil e avatar; `wallets` reúne contratos, consulta, persistência e formulários das carteiras.
+Essa separação evita concentrar a aplicação em pastas genéricas de componentes e serviços. A feature `auth` reúne contratos, sessão, formulários, API, perfil e avatar; `wallets` reúne contratos, consulta, persistência e conexão das carteiras; `checkout` reúne pagamento, idempotência, pedidos e confirmação.
 
 ### `routes`
 
@@ -98,6 +99,8 @@ Rotas atuais:
 /nfts/$nftId         # Detalhes de um NFT
 /profile             # Perfil privado do colecionador
 /wallets             # Carteiras principal e secundária
+/checkout            # Pagamento e conexão da carteira
+/orders/$orderId     # Acompanhamento e confirmação do pedido
 ```
 
 O arquivo `routeTree.gen.ts` é gerado automaticamente pelo plugin do TanStack Router.
@@ -109,7 +112,7 @@ O estado foi dividido de acordo com sua origem e duração.
 | Tipo | Responsabilidade | Implementação |
 | --- | --- | --- |
 | Estado da URL | Busca, filtros, abas, ordenação e página | TanStack Router |
-| Estado remoto | Catálogo, detalhes, favoritos, carrinho, sessão, perfil e carteiras | TanStack Query |
+| Estado remoto | Catálogo, detalhes, favoritos, carrinho, sessão, perfil, carteiras e pedidos | TanStack Query |
 | Estado local | Drawer, modal, aba visual, edição e quantidade | React |
 | Estado persistente do navegador | Identificador anônimo, carrinhos, token e banco mockado | `localStorage` |
 
@@ -148,6 +151,8 @@ O TanStack Query controla:
 - query global de sessão;
 - mutations de login, cadastro, perfil e logout;
 - mutations de avatar e carteiras;
+- mutations de conexão da carteira e criação do pedido;
+- polling apenas enquanto o pedido permanece `pending`;
 - atualização do cache do carrinho após mutations;
 - atualização otimista dos favoritos com rollback do cache.
 
@@ -183,6 +188,10 @@ DELETE /api/auth/profile/avatar
 GET  /api/wallets
 POST /api/wallets
 PATCH /api/wallets/:walletId
+POST /api/wallets/:walletId/connection
+DELETE /api/wallets/:walletId/connection
+POST /api/orders
+GET  /api/orders/:orderId
 ```
 
 Os tipos das respostas ficam nas respectivas features. O MSW implementa os mesmos contratos esperados pelo cliente.
@@ -198,6 +207,7 @@ nfts
 carts por ownerId
 favorites por userId
 wallets por userId
+orders por orderId, sempre vinculados ao userId
 users
 sessions por token
 ```
@@ -230,7 +240,9 @@ O carregamento do banco normaliza usuários persistidos por versões anteriores,
 
 Avatares são enviados como Data URL para a API simulada, validados novamente no MSW e limitados a PNG, JPEG ou WebP de até 1 MB. A escolha evita uma dependência externa de armazenamento durante a demonstração; em produção, o arquivo seria enviado para um serviço próprio e o perfil armazenaria somente sua URL.
 
-Carteiras são persistidas separadamente por `userId`. Os handlers derivam o proprietário do Bearer token, permitem uma carteira principal e uma secundária, validam rede e formato do endereço e rejeitam endereços duplicados. A query key inclui o usuário atual e seu cache é removido em logout, troca de conta ou expiração. O estado de conexão já faz parte do contrato, mas suas transições serão implementadas junto ao checkout.
+Carteiras são persistidas separadamente por `userId`. Os handlers derivam o proprietário do Bearer token, permitem uma carteira principal e uma secundária, validam rede e formato do endereço e rejeitam endereços duplicados. A query key inclui o usuário atual e seu cache é removido em logout, troca de conta ou expiração. Conexão e desconexão são operações protegidas; conectar uma carteira desconecta as demais e o checkout exige correspondência entre carteira, rede e provedor.
+
+Pedidos armazenam snapshots imutáveis do colecionador, carteira, itens e resumo financeiro. `POST /api/orders` exige uma `Idempotency-Key`: repetir a mesma chave e o mesmo conteúdo devolve o pedido existente, enquanto reutilizá-la com outro conteúdo retorna conflito. Antes da criação, a API revalida versão e total do carrinho, estoque e conexão da carteira. A confirmação é assíncrona; somente ao passar de `pending` para `confirmed` o estoque é reduzido e os itens comprados são removidos do carrinho. Pedidos recusados preservam o carrinho. A consulta deriva o usuário do token e responde `404` para pedidos de outra conta.
 
 Cada resposta do carrinho inclui itens enriquecidos, cupom aplicado, quantidade total, subtotal, desconto, taxa de rede e total. A interface não recalcula a cotação: ela apresenta os valores confirmados pela API simulada. Valores em ETH permanecem como strings na fronteira HTTP e são convertidos em unidades inteiras com `BigInt` durante os cálculos, evitando imprecisão de ponto flutuante.
 
@@ -263,8 +275,10 @@ Tailwind CSS é usado diretamente nos componentes. O breakpoint `md` separa as p
 - mobile: busca destacada, filtros em drawer, navegação inferior da homepage e detalhe em card compacto.
 - perfil: menu lateral e formulário em duas colunas no desktop; cabeçalho compacto e formulário em uma coluna no mobile.
 - carteiras: menu lateral e formulário em duas colunas no desktop; cabeçalho compacto e campos em uma coluna no mobile.
+- pagamento: formulário e resumo lateral fixo no desktop; fluxo em cartão único e controles empilhados no mobile.
+- confirmação: recibo centralizado no desktop e cartão adaptado no mobile.
 
-As telas de perfil e carteiras possuem referências desktop no Figma, mas não possuem layouts mobile fornecidos. As duas versões mobile foram projetadas pelo autor do projeto a partir da hierarquia, dos campos e do sistema visual apresentados no desktop. A documentação distingue essas adaptações das reproduções diretas das telas de referência.
+As telas de perfil e carteiras possuem referências desktop no Figma, mas não possuem layouts mobile fornecidos. As duas versões mobile foram projetadas pelo autor do projeto a partir da hierarquia, dos campos e do sistema visual apresentados no desktop. O Figma também não fornece confirmação de pedido mobile; o recibo responsivo é uma adaptação autoral da confirmação desktop. A documentação distingue essas adaptações das reproduções diretas das telas de referência.
 
 Quando a estrutura muda significativamente, são usados componentes separados, como os cabeçalhos. Quando muda apenas a disposição, o mesmo componente recebe classes responsivas.
 
@@ -291,9 +305,9 @@ Controles interativos possuem rótulos acessíveis, foco visível e elementos se
 - Os 12 NFTs possuem artes próprias em WebP.
 - Todos possuem quatro edições comerciais, mas somente o Aurora Ape possui quatro imagens diferentes.
 - Botões sem fluxo definido pelo desafio permanecem apresentacionais.
-- O carrinho possui rota responsiva, persistência e operações completas; o botão de finalização permanece bloqueado até a implementação do checkout.
+- O carrinho possui rota responsiva, persistência e operações completas; sua ação principal abre o checkout autenticado.
 - Login, cadastro, sessão, logout, perfil e avatar são funcionais; login social e recuperação de senha permanecem explicitamente indisponíveis.
-- Cadastro e edição de carteiras são funcionais e simulados; conexão, blockchain e pagamento serão simulados e nenhuma transação real será executada.
+- Cadastro, edição, conexão e desconexão de carteiras são funcionais e simulados; pedidos e transações também são mockados, e nenhuma transação real é executada.
 
 Esses trade-offs priorizam fluxos verificáveis e arquitetura extensível dentro do prazo de 48 horas.
 
@@ -301,7 +315,9 @@ Esses trade-offs priorizam fluxos verificáveis e arquitetura extensível dentro
 
 ### Carrinho e checkout
 
-O carrinho usa a mesma chave de cache, composta pelo proprietário atual, nos cabeçalhos, no painel de compra e na rota `/cart`. As mutations de itens e cupom preservam o proprietário com que foram iniciadas e substituem o cache pela resposta confirmada da API, mantendo quantidade, desconto e totais sincronizados. O checkout usará um identificador de idempotência para impedir confirmações duplicadas.
+O carrinho usa a mesma chave de cache, composta pelo proprietário atual, nos cabeçalhos, no painel de compra e na rota `/cart`. As mutations de itens e cupom preservam o proprietário com que foram iniciadas e substituem o cache pela resposta confirmada da API, mantendo quantidade, desconto e totais sincronizados.
+
+O checkout mantém uma chave de idempotência estável durante a tentativa. Se a requisição expirar depois de o servidor criar o pedido, o usuário pode reenviar e receber o mesmo recurso. Alterações nos dados ou na seleção da carteira iniciam uma chave nova. Conflitos de cotação invalidam o carrinho para exibir os valores atuais. Depois da criação, a rota do pedido consulta a API a cada 750 ms somente enquanto o status está `pending`; estados terminais interrompem o polling. Uma confirmação invalida os caches do carrinho e dos NFTs.
 
 ### Autenticação
 
@@ -332,7 +348,7 @@ Formulário de carteira
   → resposta substitui a query ["wallets", userId]
 ```
 
-A referência desktop foi reproduzida com menu lateral e duas colunas. Como o Figma não inclui uma versão mobile, essa composição é autoral: uma navegação compacta conecta perfil, carteiras e favoritos, enquanto cada carteira ocupa um cartão com campos em uma coluna. O fluxo de conexão será acrescentado no checkout, onde também serão tratados recusa, desconexão e escolha da rede.
+A referência desktop foi reproduzida com menu lateral e duas colunas. Como o Figma não inclui uma versão mobile, essa composição é autoral: uma navegação compacta conecta perfil, carteiras e favoritos, enquanto cada carteira ocupa um cartão com campos em uma coluna. No checkout, o usuário escolhe uma carteira salva, rede e provedor, e pode conectar, recusar ou desconectar a sessão simulada antes de confirmar.
 
 ### Tempo real
 
@@ -347,7 +363,7 @@ Socket.IO
 
 ### Testes e qualidade
 
-Playwright está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. A suíte possui 36 cenários e produz 72 execuções ao validar os dois projetos.
+Playwright está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. A suíte possui 43 cenários validados e produz 86 execuções aprovadas ao percorrer os dois projetos.
 
 ```text
 home.spec.ts          → carregamento e navegação responsiva
@@ -359,6 +375,7 @@ auth.spec.ts          → acesso privado, login, cadastro, sessão e logout
 profile.spec.ts       → dados pessoais e alteração de senha
 favorites.spec.ts     → autenticação, persistência, isolamento e rollback
 avatar-wallets.spec.ts → avatar, carteiras, validação e isolamento
+checkout.spec.ts       → conexão, recusa, desconexão, confirmação, timeout e isolamento
 ```
 
 Os testes observam a interface e os contratos acessíveis, restringindo seletores ao domínio relevante da página. Isso evita que conteúdo editorial visualmente semelhante seja confundido com resultados do catálogo. Helpers são compartilhados apenas quando representam uma operação de negócio completa, como autenticar uma conta ou adicionar uma edição ao carrinho.

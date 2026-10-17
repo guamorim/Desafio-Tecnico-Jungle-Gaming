@@ -1,4 +1,5 @@
 import type { Cart } from "@/features/cart/types";
+import type { MockOrderRecord } from "@/features/checkout/types";
 import type { NftDetail } from "@/features/nfts/types";
 import type { CollectorWallet } from "@/features/wallets/types";
 
@@ -14,6 +15,7 @@ type MockDatabase = {
   carts: Record<string, Cart>;
   favorites: Record<string, string[]>;
   wallets: Record<string, CollectorWallet[]>;
+  orders: Record<string, MockOrderRecord>;
   users: MockUserRecord[];
   sessions: Record<string, MockSessionRecord>;
 };
@@ -31,6 +33,10 @@ const favoritesStorageKey =
   "jungle-nft-marketplace:mock-favorites:v1";
 const walletsStorageKey =
   "jungle-nft-marketplace:mock-wallets:v1";
+const ordersStorageKey =
+  "jungle-nft-marketplace:mock-orders:v1";
+const nftsStorageKey =
+  "jungle-nft-marketplace:mock-nfts:v1";
 
 function isRecord(
   value: unknown,
@@ -371,6 +377,108 @@ function readPersistedWallets(): Record<
   }
 }
 
+function readPersistedNfts(): NftDetail[] {
+  if (typeof localStorage === "undefined") {
+    return nftDetailFixtures;
+  }
+
+  try {
+    const serializedNfts = localStorage.getItem(
+      nftsStorageKey,
+    );
+
+    if (!serializedNfts) {
+      return nftDetailFixtures;
+    }
+
+    const parsedNfts: unknown = JSON.parse(
+      serializedNfts,
+    );
+
+    if (
+      !Array.isArray(parsedNfts) ||
+      !parsedNfts.every(
+        (nft) =>
+          isRecord(nft) &&
+          typeof nft.id === "string" &&
+          typeof nft.version === "number" &&
+          Array.isArray(nft.editions),
+      )
+    ) {
+      return nftDetailFixtures;
+    }
+
+    return parsedNfts as NftDetail[];
+  } catch {
+    return nftDetailFixtures;
+  }
+}
+
+function isMockOrderRecord(
+  value: unknown,
+): value is MockOrderRecord {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.userId === "string" &&
+    ["pending", "confirmed", "refused"].includes(
+      String(value.status),
+    ) &&
+    isRecord(value.collector) &&
+    isRecord(value.wallet) &&
+    Array.isArray(value.items) &&
+    isRecord(value.summary) &&
+    typeof value.idempotencyKey === "string" &&
+    typeof value.inputFingerprint === "string" &&
+    ["confirmed", "refused"].includes(
+      String(value.intendedStatus),
+    ) &&
+    typeof value.resolvesAt === "string" &&
+    typeof value.version === "number"
+  );
+}
+
+function readPersistedOrders(): Record<
+  string,
+  MockOrderRecord
+> {
+  if (typeof localStorage === "undefined") {
+    return {};
+  }
+
+  try {
+    const serializedOrders = localStorage.getItem(
+      ordersStorageKey,
+    );
+
+    if (!serializedOrders) {
+      return {};
+    }
+
+    const parsedOrders: unknown = JSON.parse(
+      serializedOrders,
+    );
+
+    if (!isRecord(parsedOrders)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsedOrders).filter(
+        (
+          entry,
+        ): entry is [string, MockOrderRecord] =>
+          isMockOrderRecord(entry[1]),
+      ),
+    );
+  } catch {
+    return {};
+  }
+}
+
 function persistCarts(carts: Record<string, Cart>) {
   if (typeof localStorage === "undefined") {
     return;
@@ -408,6 +516,30 @@ function persistWallets(
   );
 }
 
+function persistNfts(nfts: readonly NftDetail[]) {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(
+    nftsStorageKey,
+    JSON.stringify(nfts),
+  );
+}
+
+function persistOrders(
+  orders: Record<string, MockOrderRecord>,
+) {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(
+    ordersStorageKey,
+    JSON.stringify(orders),
+  );
+}
+
 function persistAuth(
   authState: PersistedAuthState,
 ) {
@@ -425,10 +557,11 @@ function createInitialDatabase(): MockDatabase {
   const persistedAuth = readPersistedAuth();
 
   return structuredClone({
-    nfts: nftDetailFixtures,
+    nfts: readPersistedNfts(),
     carts: readPersistedCarts(),
     favorites: readPersistedFavorites(),
     wallets: readPersistedWallets(),
+    orders: readPersistedOrders(),
     users: mergeUsers(persistedAuth.users),
     sessions: persistedAuth.sessions,
   });
@@ -480,6 +613,31 @@ export function saveMockWallets(
   };
 
   persistWallets(database.wallets);
+}
+
+export function saveMockNfts(
+  nfts: readonly NftDetail[],
+) {
+  database = {
+    ...database,
+    nfts: [...nfts],
+  };
+
+  persistNfts(database.nfts);
+}
+
+export function saveMockOrder(
+  order: MockOrderRecord,
+) {
+  database = {
+    ...database,
+    orders: {
+      ...database.orders,
+      [order.id]: order,
+    },
+  };
+
+  persistOrders(database.orders);
 }
 
 export function saveMockUser(user: MockUserRecord) {
@@ -541,6 +699,8 @@ export function resetMockDatabase() {
     localStorage.removeItem(authStorageKey);
     localStorage.removeItem(favoritesStorageKey);
     localStorage.removeItem(walletsStorageKey);
+    localStorage.removeItem(ordersStorageKey);
+    localStorage.removeItem(nftsStorageKey);
   }
 
   database = createInitialDatabase();

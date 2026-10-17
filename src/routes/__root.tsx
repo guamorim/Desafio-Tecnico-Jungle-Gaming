@@ -12,16 +12,20 @@ export const Route = createRootRoute({
 });
 
 function RootLayout() {
-  const isHomePage = useRouterState({
-    select: (state) => state.location.pathname === "/",
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
   });
+  const isHomePage = pathname === "/";
+  const hidesFooter = pathname.startsWith("/orders/");
 
   return (
     <AuthProvider>
       <Outlet />
-      <div className={isHomePage ? "pb-24 md:pb-0" : undefined}>
-        <SiteFooter />
-      </div>
+      {!hidesFooter && (
+        <div className={isHomePage ? "pb-24 md:pb-0" : undefined}>
+          <SiteFooter />
+        </div>
+      )}
     </AuthProvider>
   );
 }

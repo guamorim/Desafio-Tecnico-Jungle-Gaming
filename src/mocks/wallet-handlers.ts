@@ -1,6 +1,7 @@
 import { delay, http, HttpResponse } from "msw";
 
 import type {
+  ConnectWalletInput,
   CollectorWallet,
   SaveWalletInput,
   WalletErrorResponse,
@@ -72,6 +73,31 @@ function isSaveWalletInput(
     typeof input.referralCode === "string" &&
     typeof input.email === "string" &&
     typeof input.isPrimary === "boolean"
+  );
+}
+
+function isConnectWalletInput(
+  value: unknown,
+): value is ConnectWalletInput {
+  if (
+    typeof value !== "object" ||
+    value === null
+  ) {
+    return false;
+  }
+
+  const input = value as Record<string, unknown>;
+
+  return (
+    walletNetworks.includes(
+      input.network as WalletNetwork,
+    ) &&
+    walletProviders.includes(
+      input.provider as WalletProvider,
+    ) &&
+    (input.scenario === undefined ||
+      input.scenario === "success" ||
+      input.scenario === "rejected")
   );
 }
 
@@ -370,6 +396,142 @@ export const walletHandlers = [
       } satisfies CollectorWallet;
       const nextWallets = currentWallets.map((wallet) =>
         wallet.id === walletId ? updatedWallet : wallet,
+      );
+
+      saveMockWallets(userId, nextWallets);
+
+      return HttpResponse.json(
+        createWalletsResponse(nextWallets),
+      );
+    },
+  ),
+  http.post(
+    "/api/wallets/:walletId/connection",
+    async ({ params, request }) => {
+      await delay(650);
+
+      const userId = readAuthenticatedUserId(request);
+
+      if (!userId) {
+        return HttpResponse.json(
+          { message: "Autenticação necessária." },
+          { status: 401 },
+        );
+      }
+
+      const input = await readRequestBody(request);
+
+      if (!isConnectWalletInput(input)) {
+        return HttpResponse.json(
+          { message: "Dados de conexão inválidos." },
+          { status: 400 },
+        );
+      }
+
+      if (input.scenario === "rejected") {
+        return HttpResponse.json(
+          {
+            message:
+              "A conexão foi recusada na carteira simulada.",
+          } satisfies WalletErrorResponse,
+          { status: 409 },
+        );
+      }
+
+      const walletId = String(params.walletId);
+      const currentWallets =
+        getMockDatabase().wallets[userId] ?? [];
+      const selectedWallet = currentWallets.find(
+        (wallet) => wallet.id === walletId,
+      );
+
+      if (!selectedWallet) {
+        return HttpResponse.json(
+          { message: "Carteira não encontrada." },
+          { status: 404 },
+        );
+      }
+
+      const addressMatchesNetwork =
+        input.network === "solana"
+          ? /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(
+              selectedWallet.address,
+            )
+          : /^0x[a-fA-F0-9]{40}$/.test(
+              selectedWallet.address,
+            );
+
+      if (!addressMatchesNetwork) {
+        return HttpResponse.json(
+          {
+            message:
+              "O endereço cadastrado não é compatível com a rede selecionada.",
+          } satisfies WalletErrorResponse,
+          { status: 422 },
+        );
+      }
+
+      const nextWallets = currentWallets.map(
+        (wallet) => ({
+          ...wallet,
+          ...(wallet.id === walletId
+            ? {
+                network: input.network,
+                provider: input.provider,
+                connectionStatus: "connected" as const,
+                version: wallet.version + 1,
+              }
+            : {
+                connectionStatus: "disconnected" as const,
+              }),
+        }),
+      );
+
+      saveMockWallets(userId, nextWallets);
+
+      return HttpResponse.json(
+        createWalletsResponse(nextWallets),
+      );
+    },
+  ),
+  http.delete(
+    "/api/wallets/:walletId/connection",
+    async ({ params, request }) => {
+      await delay(350);
+
+      const userId = readAuthenticatedUserId(request);
+
+      if (!userId) {
+        return HttpResponse.json(
+          { message: "Autenticação necessária." },
+          { status: 401 },
+        );
+      }
+
+      const walletId = String(params.walletId);
+      const currentWallets =
+        getMockDatabase().wallets[userId] ?? [];
+
+      if (
+        !currentWallets.some(
+          (wallet) => wallet.id === walletId,
+        )
+      ) {
+        return HttpResponse.json(
+          { message: "Carteira não encontrada." },
+          { status: 404 },
+        );
+      }
+
+      const nextWallets = currentWallets.map(
+        (wallet) =>
+          wallet.id === walletId
+            ? {
+                ...wallet,
+                connectionStatus: "disconnected" as const,
+                version: wallet.version + 1,
+              }
+            : wallet,
       );
 
       saveMockWallets(userId, nextWallets);

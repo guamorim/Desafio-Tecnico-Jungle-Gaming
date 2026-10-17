@@ -6,7 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { Minus, Plus, Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 import { getCartErrorMessage } from "../cart-error-message";
 import { applyCartCouponMutationOptions } from "../mutations/apply-cart-coupon-mutation";
@@ -378,14 +378,13 @@ export function CartPageContent({
           </div>
         </dl>
 
-        <Button
-          type="button"
-          className="w-full"
-          disabled
-          title="Checkout disponível em breve"
+        <Link
+          to="/checkout"
+          search={{ scenario: "success" }}
+          className={buttonVariants({ className: "w-full" })}
         >
           Conectar e finalizar
-        </Button>
+        </Link>
 
         <Link
           to="/"

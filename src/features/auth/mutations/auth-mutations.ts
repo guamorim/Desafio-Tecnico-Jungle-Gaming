@@ -14,6 +14,7 @@ import { getGuestOwnerId } from "@/features/cart/guest-owner";
 import { cartQueryKey } from "@/features/cart/queries/cart-query";
 import { nftViewerQueryKey } from "@/features/nfts/queries/nft-query-keys";
 import { walletsQueryKey } from "@/features/wallets/queries/wallets-query";
+import { ordersUserQueryKey } from "@/features/checkout/queries/order-query";
 import {
   login,
   logout,
@@ -62,6 +63,9 @@ function removePrivateUserCache(
   queryClient.removeQueries({
     queryKey: walletsQueryKey(userId),
     exact: true,
+  });
+  queryClient.removeQueries({
+    queryKey: ordersUserQueryKey(userId),
   });
 }
 

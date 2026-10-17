@@ -20,6 +20,12 @@ import type {
   UpdateCartItemInput,
 } from "@/features/cart/types";
 import type {
+  CreateOrderInput,
+  MockOrderRecord,
+  Order,
+  OrderFieldErrors,
+} from "@/features/checkout/types";
+import type {
   FavoriteNftsResponse,
   ListNftsResponse,
   NftDetail,
@@ -34,6 +40,8 @@ import {
   getMockDatabase,
   saveMockCart,
   saveMockFavorites,
+  saveMockNfts,
+  saveMockOrder,
 } from "./mock-database";
 import { findMockCoupon } from "./fixtures/coupons";
 import { walletHandlers } from "./wallet-handlers";
@@ -494,6 +502,279 @@ function createCartResponse(
       0,
     ),
   };
+}
+
+function isCreateOrderInput(
+  value: unknown,
+): value is CreateOrderInput {
+  if (
+    typeof value !== "object" ||
+    value === null
+  ) {
+    return false;
+  }
+
+  const input = value as Record<string, unknown>;
+
+  if (
+    typeof input.collector !== "object" ||
+    input.collector === null
+  ) {
+    return false;
+  }
+
+  const collector = input.collector as Record<
+    string,
+    unknown
+  >;
+
+  return (
+    typeof input.walletId === "string" &&
+    ["ethereum", "polygon", "solana"].includes(
+      String(input.network),
+    ) &&
+    ["metamask", "walletconnect", "coinbase"].includes(
+      String(input.provider),
+    ) &&
+    typeof input.expectedCartVersion === "number" &&
+    Number.isInteger(input.expectedCartVersion) &&
+    typeof input.expectedTotalEth === "string" &&
+    typeof collector.displayName === "string" &&
+    typeof collector.username === "string" &&
+    typeof collector.profileName === "string" &&
+    typeof collector.email === "string" &&
+    typeof collector.ensName === "string" &&
+    (input.scenario === undefined ||
+      [
+        "success",
+        "wallet-rejected",
+        "payment-refused",
+        "order-timeout",
+      ].includes(String(input.scenario)))
+  );
+}
+
+function validateOrderCollector(
+  input: CreateOrderInput,
+) {
+  const errors: OrderFieldErrors = {};
+  const { collector } = input;
+
+  if (
+    collector.displayName.trim().length < 2 ||
+    collector.displayName.trim().length > 60
+  ) {
+    errors.displayName =
+      "Use um nome entre 2 e 60 caracteres.";
+  }
+
+  if (
+    collector.username.trim().length < 3 ||
+    collector.username.trim().length > 30
+  ) {
+    errors.username =
+      "Use um nome de usuário entre 3 e 30 caracteres.";
+  }
+
+  if (
+    collector.profileName.trim().length < 2 ||
+    collector.profileName.trim().length > 60
+  ) {
+    errors.profileName =
+      "Use um nome de perfil entre 2 e 60 caracteres.";
+  }
+
+  if (
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+      collector.email.trim(),
+    )
+  ) {
+    errors.email = "Informe um e-mail válido.";
+  }
+
+  if (
+    collector.ensName.trim() !== "" &&
+    !/^[a-z0-9][a-z0-9-]{1,62}\.eth$/.test(
+      collector.ensName
+        .trim()
+        .toLocaleLowerCase("pt-BR"),
+    )
+  ) {
+    errors.ensName =
+      "Use um nome ENS válido terminado em .eth.";
+  }
+
+  return errors;
+}
+
+function createOrderFingerprint(
+  input: CreateOrderInput,
+) {
+  return JSON.stringify(input);
+}
+
+function toOrder(record: MockOrderRecord): Order {
+  return {
+    id: record.id,
+    userId: record.userId,
+    status: record.status,
+    collector: record.collector,
+    wallet: record.wallet,
+    items: record.items,
+    summary: record.summary,
+    transactionId: record.transactionId,
+    explorerUrl: record.explorerUrl,
+    refusalReason: record.refusalReason,
+    idempotencyKey: record.idempotencyKey,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+    version: record.version,
+  };
+}
+
+function createTransactionId() {
+  return `0x${crypto
+    .randomUUID()
+    .replaceAll("-", "")
+    .padEnd(64, "0")}`;
+}
+
+function resolveOrderIfDue(
+  order: MockOrderRecord,
+): MockOrderRecord {
+  if (
+    order.status !== "pending" ||
+    Date.parse(order.resolvesAt) > Date.now()
+  ) {
+    return order;
+  }
+
+  const database = getMockDatabase();
+  const hasUnavailableItem = order.items.some(
+    (orderItem) => {
+      const nft = database.nfts.find(
+        (candidate) =>
+          candidate.id === orderItem.nftId,
+      );
+      const edition = nft?.editions.find(
+        (candidate) =>
+          candidate.id === orderItem.editionId,
+      );
+
+      return (
+        !edition ||
+        edition.availableQuantity < orderItem.quantity
+      );
+    },
+  );
+  const isConfirmed =
+    order.intendedStatus === "confirmed" &&
+    !hasUnavailableItem;
+  const transactionId = isConfirmed
+    ? createTransactionId()
+    : null;
+  const resolvedOrder = {
+    ...order,
+    status: isConfirmed
+      ? ("confirmed" as const)
+      : ("refused" as const),
+    transactionId,
+    explorerUrl: transactionId
+      ? `https://sepolia.etherscan.io/tx/${transactionId}`
+      : null,
+    refusalReason: isConfirmed
+      ? null
+      : hasUnavailableItem
+        ? "Um item ficou indisponível antes da confirmação."
+        : "O pagamento foi recusado pela carteira simulada.",
+    updatedAt: new Date().toISOString(),
+    version: order.version + 1,
+  } satisfies MockOrderRecord;
+
+  if (isConfirmed) {
+    const nextNfts = database.nfts.map((nft) => {
+      const purchasedItems = order.items.filter(
+        (item) => item.nftId === nft.id,
+      );
+
+      if (purchasedItems.length === 0) {
+        return nft;
+      }
+
+      const editions = nft.editions.map((edition) => {
+        const purchased = purchasedItems.find(
+          (item) => item.editionId === edition.id,
+        );
+
+        return purchased
+          ? {
+              ...edition,
+              availableQuantity: Math.max(
+                0,
+                edition.availableQuantity -
+                  purchased.quantity,
+              ),
+              version: edition.version + 1,
+            }
+          : edition;
+      });
+
+      return {
+        ...nft,
+        editions,
+        availableQuantity: editions.reduce(
+          (total, edition) =>
+            total + edition.availableQuantity,
+          0,
+        ),
+        version: nft.version + 1,
+      };
+    });
+    const ownerId = createUserCartOwnerId(order.userId);
+    const currentCart = database.carts[ownerId];
+
+    if (currentCart) {
+      const nextItems = currentCart.items.flatMap(
+        (cartItem) => {
+          const purchased = order.items.find(
+            (item) => item.id === cartItem.id,
+          );
+
+          if (!purchased) {
+            return [cartItem];
+          }
+
+          const remainingQuantity =
+            cartItem.quantity - purchased.quantity;
+
+          return remainingQuantity > 0
+            ? [
+                {
+                  ...cartItem,
+                  quantity: remainingQuantity,
+                },
+              ]
+            : [];
+        },
+      );
+
+      saveMockCart({
+        ...currentCart,
+        items: nextItems,
+        couponCode:
+          nextItems.length > 0
+            ? currentCart.couponCode
+            : null,
+        version: currentCart.version + 1,
+      });
+    }
+
+    saveMockNfts(nextNfts);
+  }
+
+  saveMockOrder(resolvedOrder);
+
+  return resolvedOrder;
 }
 
 export const handlers = [
@@ -1186,6 +1467,293 @@ export const handlers = [
 
       return HttpResponse.json(
         createCartResponse(nextCart, database.nfts),
+      );
+    },
+  ),
+  http.post("/api/orders", async ({ request }) => {
+    await delay(650);
+
+    const token = readBearerToken(request);
+    const authenticated = token
+      ? findAuthenticatedUser(token)
+      : null;
+
+    if (!authenticated) {
+      return HttpResponse.json(
+        { message: "Autenticação necessária." },
+        { status: 401 },
+      );
+    }
+
+    const idempotencyKey = request.headers
+      .get("Idempotency-Key")
+      ?.trim();
+
+    if (
+      !idempotencyKey ||
+      idempotencyKey.length < 8 ||
+      idempotencyKey.length > 128
+    ) {
+      return HttpResponse.json(
+        {
+          message:
+            "Informe uma chave de idempotência válida.",
+        },
+        { status: 400 },
+      );
+    }
+
+    let input: unknown;
+
+    try {
+      input = await request.json();
+    } catch {
+      input = null;
+    }
+
+    if (!isCreateOrderInput(input)) {
+      return HttpResponse.json(
+        { message: "Dados do pedido inválidos." },
+        { status: 400 },
+      );
+    }
+
+    const userId = authenticated.user.id;
+    const fingerprint = createOrderFingerprint(input);
+    const existingOrder = Object.values(
+      getMockDatabase().orders,
+    ).find(
+      (order) =>
+        order.userId === userId &&
+        order.idempotencyKey === idempotencyKey,
+    );
+
+    if (existingOrder) {
+      if (
+        existingOrder.inputFingerprint !== fingerprint
+      ) {
+        return HttpResponse.json(
+          {
+            message:
+              "A chave de idempotência já foi usada com outro conteúdo.",
+            code: "IDEMPOTENCY_CONFLICT",
+          },
+          { status: 409 },
+        );
+      }
+
+      return HttpResponse.json(
+        toOrder(resolveOrderIfDue(existingOrder)),
+      );
+    }
+
+    const fieldErrors = validateOrderCollector(input);
+
+    if (Object.keys(fieldErrors).length > 0) {
+      return HttpResponse.json(
+        {
+          message: "Revise os dados do colecionador.",
+          fieldErrors,
+        },
+        { status: 422 },
+      );
+    }
+
+    const database = getMockDatabase();
+    const wallet = (
+      database.wallets[userId] ?? []
+    ).find(
+      (candidate) => candidate.id === input.walletId,
+    );
+
+    if (!wallet) {
+      return HttpResponse.json(
+        { message: "Carteira não encontrada." },
+        { status: 404 },
+      );
+    }
+
+    if (
+      wallet.connectionStatus !== "connected" ||
+      wallet.network !== input.network ||
+      wallet.provider !== input.provider
+    ) {
+      return HttpResponse.json(
+        {
+          message:
+            "Conecte a carteira selecionada antes de confirmar.",
+          code: "WALLET_NOT_CONNECTED",
+        },
+        { status: 409 },
+      );
+    }
+
+    const ownerId = createUserCartOwnerId(userId);
+    const cart =
+      database.carts[ownerId] ??
+      createEmptyCart(ownerId);
+    const currentQuote = createCartResponse(
+      cart,
+      database.nfts,
+    );
+
+    if (currentQuote.items.length === 0) {
+      return HttpResponse.json(
+        {
+          message: "O carrinho está vazio.",
+          code: "CART_EMPTY",
+        },
+        { status: 409 },
+      );
+    }
+
+    const hasInvalidAvailability = cart.items.some(
+      (cartItem) => {
+        const nft = database.nfts.find(
+          (candidate) =>
+            candidate.id === cartItem.nftId,
+        );
+        const edition = nft?.editions.find(
+          (candidate) =>
+            candidate.id === cartItem.editionId,
+        );
+
+        return (
+          !edition ||
+          cartItem.quantity >
+            Math.min(
+              edition.availableQuantity,
+              edition.maximumPurchaseQuantity,
+            )
+        );
+      },
+    );
+
+    if (
+      hasInvalidAvailability ||
+      cart.version !== input.expectedCartVersion ||
+      currentQuote.totalEth !== input.expectedTotalEth
+    ) {
+      return HttpResponse.json(
+        {
+          message:
+            "A cotação mudou. Revise os valores antes de confirmar novamente.",
+          code: "QUOTE_CHANGED",
+        },
+        { status: 409 },
+      );
+    }
+
+    const now = new Date();
+    const orderId = `order-${crypto.randomUUID()}`;
+    const order = {
+      id: orderId,
+      userId,
+      status: "pending",
+      collector: {
+        displayName: input.collector.displayName.trim(),
+        username: input.collector.username.trim(),
+        profileName: input.collector.profileName.trim(),
+        email: input.collector.email
+          .trim()
+          .toLocaleLowerCase("pt-BR"),
+        ensName: input.collector.ensName
+          .trim()
+          .toLocaleLowerCase("pt-BR"),
+      },
+      wallet: {
+        id: wallet.id,
+        label: wallet.label,
+        address: wallet.address,
+        network: input.network,
+        provider: input.provider,
+      },
+      items: currentQuote.items.map((item) => {
+        const nft = database.nfts.find(
+          (candidate) => candidate.id === item.nftId,
+        );
+
+        return {
+          id: item.id,
+          nftId: item.nftId,
+          editionId: item.editionId,
+          name: item.nft.name,
+          collectionName: item.nft.collectionName,
+          imageUrl: item.nft.imageUrl,
+          tokenId: nft?.tokenId ?? "",
+          editionName: item.edition.name,
+          unitPriceEth: item.edition.priceEth,
+          quantity: item.quantity,
+          lineTotalEth: item.lineTotalEth,
+        };
+      }),
+      summary: {
+        couponCode: currentQuote.coupon?.code ?? null,
+        discountEth: currentQuote.discountEth,
+        networkFeeEth: currentQuote.networkFeeEth,
+        subtotalEth: currentQuote.subtotalEth,
+        totalEth: currentQuote.totalEth,
+      },
+      transactionId: null,
+      explorerUrl: null,
+      refusalReason: null,
+      idempotencyKey,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+      version: 1,
+      inputFingerprint: fingerprint,
+      intendedStatus:
+        input.scenario === "payment-refused"
+          ? "refused"
+          : "confirmed",
+      resolvesAt: new Date(
+        now.getTime() + 1_500,
+      ).toISOString(),
+    } satisfies MockOrderRecord;
+
+    saveMockOrder(order);
+
+    if (input.scenario === "order-timeout") {
+      await delay(10_500);
+    }
+
+    return HttpResponse.json(toOrder(order), {
+      status: 202,
+    });
+  }),
+  http.get(
+    "/api/orders/:orderId",
+    async ({ params, request }) => {
+      await delay(350);
+
+      const token = readBearerToken(request);
+      const authenticated = token
+        ? findAuthenticatedUser(token)
+        : null;
+
+      if (!authenticated) {
+        return HttpResponse.json(
+          { message: "Autenticação necessária." },
+          { status: 401 },
+        );
+      }
+
+      const order = getMockDatabase().orders[
+        String(params.orderId)
+      ];
+
+      if (
+        !order ||
+        order.userId !== authenticated.user.id
+      ) {
+        return HttpResponse.json(
+          { message: "Pedido não encontrado." },
+          { status: 404 },
+        );
+      }
+
+      return HttpResponse.json(
+        toOrder(resolveOrderIfDue(order)),
       );
     },
   ),
