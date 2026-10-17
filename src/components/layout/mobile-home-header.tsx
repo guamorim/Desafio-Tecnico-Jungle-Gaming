@@ -62,6 +62,7 @@ export function MobileHomeHeader({
 
           {onOpenFilters && (
             <Button
+              id="mobile-filter-trigger"
               type="button"
               size="icon-lg"
               className="size-12 shrink-0 rounded-2xl"

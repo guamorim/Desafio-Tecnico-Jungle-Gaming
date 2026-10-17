@@ -254,6 +254,32 @@ function shouldFailFavoriteMutation() {
   );
 }
 
+const recoverableCatalogErrorAttemptsKey =
+  "jungle-nft-marketplace:mock-catalog-recoverable-error-attempts";
+
+function shouldFailRecoverableCatalogRequest() {
+  if (typeof localStorage === "undefined") {
+    return true;
+  }
+
+  const currentAttempts = Number(
+    localStorage.getItem(
+      recoverableCatalogErrorAttemptsKey,
+    ) ?? "0",
+  );
+
+  if (currentAttempts >= 2) {
+    return false;
+  }
+
+  localStorage.setItem(
+    recoverableCatalogErrorAttemptsKey,
+    String(currentAttempts + 1),
+  );
+
+  return true;
+}
+
 function withFavoriteState(
   nft: NftSummary,
   userId: string | null,
@@ -813,7 +839,20 @@ export const handlers = [
       ),
     } satisfies NftFilters;
 
-    await delay(500);
+    await delay(scenario === "slow" ? 1_800 : 500);
+
+    if (
+      scenario === "recoverable-error" &&
+      shouldFailRecoverableCatalogRequest()
+    ) {
+      return HttpResponse.json(
+        {
+          message:
+            "Falha temporária simulada ao carregar o catálogo.",
+        },
+        { status: 503 },
+      );
+    }
 
     if (scenario === "empty") {
       return HttpResponse.json(

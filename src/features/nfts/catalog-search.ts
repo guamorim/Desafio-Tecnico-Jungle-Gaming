@@ -10,7 +10,10 @@ import {
   type NftNetwork,
 } from "./catalog-filters";
 
-export type NftCatalogScenario = "empty";
+export type NftCatalogScenario =
+  | "empty"
+  | "slow"
+  | "recoverable-error";
 
 export type NftCatalogSearch = {
   readonly categories?: readonly NftCategory[];
@@ -175,7 +178,9 @@ export function validateNftCatalogSearch(
   const page = parsePage(search.page);
 
   const scenario =
-    search.scenario === "empty"
+    search.scenario === "empty" ||
+    search.scenario === "slow" ||
+    search.scenario === "recoverable-error"
       ? search.scenario
       : undefined;
 

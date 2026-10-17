@@ -9,7 +9,7 @@ export function NftCatalogSkeleton() {
   return (
     <div role="status" aria-live="polite">
       <span className="sr-only">
-        Loading NFTs...
+        Carregando NFTs...
       </span>
 
       <ul

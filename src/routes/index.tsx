@@ -105,6 +105,18 @@ function HomePage() {
       });
   }
 
+  function handleFilterOpenChange(open: boolean) {
+    setIsFilterOpen(open);
+
+    if (!open) {
+      requestAnimationFrame(() => {
+        document
+          .getElementById("mobile-filter-trigger")
+          ?.focus();
+      });
+    }
+  }
+
   function handleSortChange(
     sort: NftCatalogSort,
   ) {
@@ -221,7 +233,7 @@ function HomePage() {
         open={isFilterOpen}
         search={catalogSearch}
         onApply={handleApplyFilters}
-        onOpenChange={setIsFilterOpen}
+        onOpenChange={handleFilterOpenChange}
       />
 
       <HomeHero />

@@ -193,6 +193,8 @@ O Vite exibirá no terminal o endereço local da aplicação, normalmente `http:
 | `npm run test:e2e` | Executa os testes Playwright em Chromium desktop e mobile. |
 | `npm run test:e2e:ui` | Abre a interface interativa do Playwright. |
 | `npm run test:e2e:report` | Abre o último relatório HTML. |
+| `npm run test:e2e:visual` | Compara início, detalhe, carrinho e pagamento com as baselines visuais. |
+| `npm run test:e2e:visual:update` | Gera ou atualiza intencionalmente as baselines visuais. |
 
 ## Estrutura principal
 
@@ -367,6 +369,8 @@ O MSW devolve erros `400`, `404` ou `409` conforme o problema encontrado.
 | `sort` | Seleciona `price-asc` ou `price-desc`; a ausência representa recentes. |
 | `page` | Página atual do catálogo. |
 | `scenario=empty` | Força um resultado vazio determinístico. |
+| `scenario=slow` | Mantém o catálogo em carregamento lento para inspecionar o skeleton. |
+| `scenario=recoverable-error` | Falha durante a tentativa automática e permite recuperação manual. |
 
 Busca, categorias, rede e preço são combinados com lógica AND. Categorias selecionadas entre si usam lógica OR.
 
@@ -389,6 +393,8 @@ Com o servidor executando em `http://localhost:5173`:
 | `/?sort=price-asc` | Ordenação por menor preço. |
 | `/?q=nao-existe` | Estado vazio produzido pela busca. |
 | `/?scenario=empty` | Estado vazio forçado pelo MSW. |
+| `/?scenario=slow` | Carregamento lento determinístico e skeleton do catálogo. |
+| `/?scenario=recoverable-error` | Falha temporária seguida de recuperação pelo botão de nova tentativa. |
 | `/nfts/nft-aurora-ape` | Detalhes, edições e compra do Aurora Ape. |
 | `/nfts/nft-inexistente` | Estado de NFT não encontrado. |
 | `/cart` | Carrinho persistente, edição de itens e resumo financeiro. |
@@ -429,7 +435,6 @@ Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite 
 
 ## Próximas etapas
 
-- Cenários adicionais de falha e regressão visual com Playwright.
 - Auditoria Lighthouse e otimização do bundle.
 - Revisão final da documentação.
 - Deploy público.
@@ -444,7 +449,7 @@ npm run build
 npm run test:e2e
 ```
 
-A suíte possui 49 cenários validados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 98 execuções aprovadas. Ela cobre:
+A suíte possui 57 cenários validados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 114 execuções aprovadas. Ela cobre:
 
 - carregamento e navegação responsiva da homepage;
 - pesquisa, filtros combinados, ordenação, abas, paginação, histórico e estado vazio do catálogo;
@@ -458,6 +463,8 @@ A suíte possui 49 cenários validados nos projetos Chromium desktop (`1440 × 9
 - acesso privado, criação, edição, persistência, validação e isolamento de carteiras.
 - pagamento protegido, conexão, recusa e desconexão de carteira, pedido confirmado ou recusado, retomada idempotente após timeout e isolamento entre contas.
 - atualização em tempo real de preço e estoque, remoção de edição esgotada, revisão de cotação, descarte de eventos duplicados ou antigos e reconciliação REST após queda do socket.
+- navegação por teclado, foco contido e restaurado em overlays, skeleton durante latência controlada e recuperação após falha temporária.
+- regressão visual da homepage, detalhe, carrinho e pagamento com oito baselines versionadas.
 
 O Playwright gera o build de produção e inicia o preview com MSW antes dos testes. Falhas preservam screenshot e trace; resultados e relatórios HTML permanecem como artefatos locais e não são versionados.
 

@@ -373,7 +373,7 @@ Pedidos pendentes usam eventos enquanto a conexão está saudável. Durante uma 
 
 ### Testes e qualidade
 
-Playwright está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. A suíte possui 49 cenários validados e produz 98 execuções aprovadas ao percorrer os dois projetos.
+Playwright está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. A suíte possui 57 cenários validados e produz 114 execuções aprovadas ao percorrer os dois projetos.
 
 ```text
 home.spec.ts          → carregamento e navegação responsiva
@@ -387,6 +387,8 @@ favorites.spec.ts     → autenticação, persistência, isolamento e rollback
 avatar-wallets.spec.ts → avatar, carteiras, validação e isolamento
 checkout.spec.ts       → conexão, recusa, desconexão, confirmação, timeout e isolamento
 realtime.spec.ts       → preço, estoque, versões, reconexão e fallback REST
+accessibility-resilience.spec.ts → teclado, foco, skeleton, falha e recuperação
+visual.spec.ts         → baselines de início, detalhe, carrinho e pagamento
 ```
 
 Os 6 cenários de `realtime.spec.ts` são executados nos dois projetos e validam atualizações de preço e estoque no catálogo, detalhes e carrinho, remoção de edição esgotada, revisão de cotação no checkout, descarte de eventos duplicados ou antigos e retomada REST após interrupção do socket.
@@ -395,7 +397,7 @@ Os testes observam a interface e os contratos acessíveis, restringindo seletore
 
 Cada teste recebe um contexto de navegador isolado, enquanto fixtures determinísticas do MSW tornam os resultados reproduzíveis. Falhas preservam screenshot e trace, e o relatório HTML permanece como artefato local.
 
-A cobertura ainda receberá cenários de falha das próximas features e regressão visual com baselines versionadas. Lighthouse será executado sobre o mesmo build de produção. Os cenários determinísticos do MSW permitirão testar loading, vazio, erro, conflito de estoque e sucesso sem depender de serviços externos.
+A cobertura valida loading, vazio, erro recuperável, conflito de estoque e sucesso com cenários determinísticos do MSW. A regressão visual compara oito baselines versionadas de início, detalhe, carrinho e pagamento em desktop e mobile. Lighthouse será executado sobre o mesmo build de produção.
 
 ## Regras para novas features
 

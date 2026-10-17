@@ -35,6 +35,31 @@ export function AuthProvider({
   const [authMode, setAuthMode] =
     useState<AuthMode | null>(null);
   const previousUserId = useRef<string | null>(null);
+  const authTrigger = useRef<HTMLElement | null>(null);
+
+  function openAuth(mode: AuthMode) {
+    authTrigger.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    setAuthMode(mode);
+  }
+
+  function handleAuthOpenChange(open: boolean) {
+    if (open) {
+      return;
+    }
+
+    const trigger = authTrigger.current;
+    authTrigger.current = null;
+    setAuthMode(null);
+
+    requestAnimationFrame(() => {
+      if (trigger?.isConnected) {
+        trigger.focus();
+      }
+    });
+  }
 
   useEffect(() => {
     if (isPending) {
@@ -111,10 +136,10 @@ export function AuthProvider({
         session: data?.session ?? null,
         isSessionPending: isPending,
         openLogin: () => {
-          setAuthMode("login");
+          openAuth("login");
         },
         openRegister: () => {
-          setAuthMode("register");
+          openAuth("register");
         },
       }}
     >
@@ -125,11 +150,7 @@ export function AuthProvider({
           mode={authMode ?? "login"}
           open={authMode !== null}
           onModeChange={setAuthMode}
-          onOpenChange={(open) => {
-            if (!open) {
-              setAuthMode(null);
-            }
-          }}
+          onOpenChange={handleAuthOpenChange}
         />
       </RealtimeProvider>
     </AuthContext.Provider>
