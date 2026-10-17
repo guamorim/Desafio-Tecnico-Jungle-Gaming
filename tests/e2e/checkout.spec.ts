@@ -6,10 +6,13 @@ import {
 
 import { addAuroraToCart } from "./helpers/cart.js";
 import {
+  expireCurrentSession,
+  fixtureAccount,
   loginWithAccount,
   loginWithFixture,
   logoutFromProfile,
   secondFixtureAccount,
+  submitLogin,
 } from "./helpers/auth.js";
 
 const checkoutWalletAddress = `0x${"7".repeat(40)}`;
@@ -87,6 +90,65 @@ test.describe("pagamento, carteira e pedidos", () => {
       page.getByRole("heading", {
         name: "Entre para consultar seu pedido",
       }),
+    ).toBeVisible();
+  });
+
+  test("conclui a compra desde o catálogo até o recibo confirmado", async ({
+    page,
+  }) => {
+    await loginWithFixture(page);
+    await createCheckoutWallet(page);
+    await page.goto("/");
+
+    const auroraCardLink = page
+      .getByRole("tabpanel")
+      .locator('a[href="/nfts/nft-aurora-ape"]')
+      .first();
+
+    await expect(auroraCardLink).toBeVisible();
+    await auroraCardLink.click();
+
+    const purchasePanel = page.locator(
+      'section[aria-labelledby="nft-edition-title"]',
+    );
+
+    await expect(
+      page.getByRole("heading", {
+        name: "Aurora Ape",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await purchasePanel
+      .getByRole("button", { name: "Comprar NFT" })
+      .click();
+    await expect(
+      purchasePanel.getByText("Item adicionado ao carrinho."),
+    ).toBeVisible();
+
+    await page
+      .getByRole("link", { name: /Abrir carrinho/ })
+      .filter({ visible: true })
+      .click();
+    await expect(
+      page.getByRole("listitem").filter({ hasText: "Aurora Ape" }),
+    ).toBeVisible();
+
+    await page
+      .getByRole("link", { name: "Conectar e finalizar" })
+      .click();
+    await connectCheckoutWallet(page);
+    await confirmOrder(page);
+
+    await expect(
+      page.getByRole("heading", {
+        name: "Seus NFTs agora estão na sua carteira",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Aurora Ape", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("ID da transação:"),
     ).toBeVisible();
   });
 
@@ -205,6 +267,77 @@ test.describe("pagamento, carteira e pedidos", () => {
       : 0;
 
     expect(orderCount).toBe(1);
+  });
+
+  test("impede pedido duplicado em cliques repetidos", async ({
+    page,
+  }) => {
+    await prepareCheckout(page);
+    await connectCheckoutWallet(page);
+
+    const confirmButton = page.getByRole("button", {
+      name: "Confirmar compra",
+    });
+
+    await confirmButton.evaluate((element) => {
+      element.click();
+      element.click();
+    });
+
+    await expect(page).toHaveURL(/\/orders\/order-/);
+    await expect(
+      page.getByRole("heading", {
+        name: "Seus NFTs agora estão na sua carteira",
+      }),
+    ).toBeVisible();
+
+    const rawOrders = await page.evaluate<string | null>(
+      'localStorage.getItem("jungle-nft-marketplace:mock-orders:v1")',
+    );
+    const orderCount = rawOrders
+      ? Object.keys(JSON.parse(rawOrders) as object).length
+      : 0;
+
+    expect(orderCount).toBe(1);
+  });
+
+  test("preserva o checkout para retomada após a sessão expirar", async ({
+    page,
+  }) => {
+    await prepareCheckout(page);
+    await connectCheckoutWallet(page);
+    await expireCurrentSession(page);
+    await page.reload();
+
+    const accessRequiredHeading = page.getByRole("heading", {
+      name: "Entre para continuar o pagamento",
+    });
+
+    await expect(accessRequiredHeading).toBeVisible();
+    await expect(page).toHaveURL(/\/checkout\?scenario=success$/);
+
+    const accessRequiredSection = page.locator("section").filter({
+      has: accessRequiredHeading,
+    });
+    await accessRequiredSection
+      .getByRole("button", { name: "Entrar", exact: true })
+      .click();
+
+    const dialog = page.getByRole("dialog");
+    await submitLogin(
+      dialog,
+      fixtureAccount.email,
+      fixtureAccount.password,
+    );
+
+    await expect(dialog).toBeHidden();
+    await expect(
+      page.getByRole("heading", { name: "Carteira e rede" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Confirmar compra" }),
+    ).toBeEnabled();
+    await expect(page).toHaveURL(/\/checkout\?scenario=success$/);
   });
 
   test("impede outra conta de consultar o pedido", async ({ page }) => {

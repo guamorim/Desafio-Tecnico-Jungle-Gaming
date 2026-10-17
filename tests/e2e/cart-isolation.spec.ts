@@ -5,6 +5,7 @@ import {
 } from "@playwright/test";
 
 import {
+  expireCurrentSession,
   fixtureAccount,
   loginWithAccount,
   loginWithFixture,
@@ -100,43 +101,7 @@ test.describe("isolamento do carrinho", () => {
     await loginWithFixture(page);
     await addAuroraToCart(page, 2);
 
-    await page.evaluate(() => {
-      const tokenStorageKey =
-        "jungle-nft-marketplace:auth-token:v1";
-      const authStorageKey =
-        "jungle-nft-marketplace:mock-auth:v1";
-      const token = localStorage.getItem(tokenStorageKey);
-      const serializedAuth =
-        localStorage.getItem(authStorageKey);
-
-      if (!token || !serializedAuth) {
-        throw new Error(
-          "Não foi possível preparar a expiração da sessão.",
-        );
-      }
-
-      const authState = JSON.parse(serializedAuth) as {
-        sessions: Record<
-          string,
-          {
-            expiresAt: string;
-          }
-        >;
-      };
-      const session = authState.sessions[token];
-
-      if (!session) {
-        throw new Error("A sessão autenticada não foi encontrada.");
-      }
-
-      session.expiresAt = new Date(
-        Date.now() - 1_000,
-      ).toISOString();
-      localStorage.setItem(
-        authStorageKey,
-        JSON.stringify(authState),
-      );
-    });
+    await expireCurrentSession(page);
 
     await page.goto("/profile");
     await page.reload();

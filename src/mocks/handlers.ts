@@ -252,16 +252,16 @@ function shouldFailFavoriteMutation() {
 
 const recoverableCatalogErrorAttemptsKey =
   "jungle-nft-marketplace:mock-catalog-recoverable-error-attempts";
+const offlineCatalogErrorAttemptsKey =
+  "jungle-nft-marketplace:mock-catalog-offline-attempts";
 
-function shouldFailRecoverableCatalogRequest() {
+function shouldFailCatalogRequest(storageKey: string) {
   if (typeof localStorage === "undefined") {
     return true;
   }
 
   const currentAttempts = Number(
-    localStorage.getItem(
-      recoverableCatalogErrorAttemptsKey,
-    ) ?? "0",
+    localStorage.getItem(storageKey) ?? "0",
   );
 
   if (currentAttempts >= 2) {
@@ -269,7 +269,7 @@ function shouldFailRecoverableCatalogRequest() {
   }
 
   localStorage.setItem(
-    recoverableCatalogErrorAttemptsKey,
+    storageKey,
     String(currentAttempts + 1),
   );
 
@@ -834,11 +834,31 @@ export const handlers = [
       ),
     } satisfies NftFilters;
 
-    await delay(scenario === "slow" ? 1_800 : 0);
+    const catalogDelay =
+      scenario === "slow"
+        ? 1_800
+        : scenario === "out-of-order"
+          ? filters.searchQuery.includes("aurora ape")
+            ? 1_400
+            : 100
+          : 0;
+
+    await delay(catalogDelay);
+
+    if (
+      scenario === "offline" &&
+      shouldFailCatalogRequest(
+        offlineCatalogErrorAttemptsKey,
+      )
+    ) {
+      return HttpResponse.error();
+    }
 
     if (
       scenario === "recoverable-error" &&
-      shouldFailRecoverableCatalogRequest()
+      shouldFailCatalogRequest(
+        recoverableCatalogErrorAttemptsKey,
+      )
     ) {
       return HttpResponse.json(
         {

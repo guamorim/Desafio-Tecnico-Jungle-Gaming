@@ -6,7 +6,7 @@ A aplicação simula a descoberta e a compra de NFTs com dados determinísticos,
 
 As principais decisões técnicas e os pontos de extensão estão documentados em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-> Status: em desenvolvimento. Homepage, detalhes dos NFTs, carrinho, autenticação, perfil privado, avatar, favoritos, carteiras, checkout com pedidos e a integração em tempo real estão funcionais e responsivos. Auditoria final e deploy fazem parte das próximas etapas.
+> Status: implementação funcional e responsiva, com suíte E2E e auditoria Lighthouse concluídas. O deploy público é a próxima etapa da entrega.
 
 ## Funcionalidades implementadas
 
@@ -157,7 +157,7 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - Playwright
 - Lighthouse CI
 
-O Playwright cobre os fluxos concluídos em Chromium desktop e mobile. O Lighthouse CI audita o build de produção em ambos os perfis.
+O Playwright cobre os fluxos concluídos em Chromium desktop e mobile, além de uma jornada responsiva dedicada em tablet. O Lighthouse CI audita o build de produção nos perfis desktop e mobile.
 
 ## Requisitos
 
@@ -188,10 +188,12 @@ O Vite exibirá no terminal o endereço local da aplicação, normalmente `http:
 | Comando | Descrição |
 | --- | --- |
 | `npm run dev` | Inicia o servidor de desenvolvimento. |
+| `npm run typecheck` | Verifica os tipos TypeScript sem gerar o bundle. |
 | `npm run build` | Verifica os tipos e gera o bundle de produção. |
 | `npm run lint` | Executa a análise estática do projeto. |
 | `npm run preview` | Serve localmente o bundle de produção. |
-| `npm run test:e2e` | Executa os testes Playwright em Chromium desktop e mobile. |
+| `npm run test:e2e` | Executa os testes Playwright em Chromium desktop, tablet e mobile. |
+| `npm run test:e2e:tablet` | Executa somente a jornada responsiva em `768 × 1024`. |
 | `npm run test:e2e:ui` | Abre a interface interativa do Playwright. |
 | `npm run test:e2e:report` | Abre o último relatório HTML. |
 | `npm run test:e2e:visual` | Compara início, detalhe, carrinho e pagamento com as baselines visuais. |
@@ -216,6 +218,7 @@ scripts/summarize-lighthouse.mjs # Consolida categorias, LCP, CLS e TBT
 
 src/
 ├── components/
+│   ├── errors/                  # Estados globais, incluindo rota 404
 │   ├── home/                    # Hero, destaque e conteúdo editorial
 │   ├── layout/                  # Cabeçalhos, container e rodapé global
 │   └── ui/                      # Componentes do shadcn/ui
@@ -268,7 +271,7 @@ src/
 │   ├── handlers.ts              # Composição dos handlers REST
 │   └── mock-database.ts         # Banco mockado persistente
 └── routes/
-    ├── __root.tsx               # Layout raiz e rodapé
+    ├── __root.tsx               # Layout raiz, rodapé e tratamento global de 404
     ├── cart.tsx                 # Carrinho
     ├── checkout.tsx             # Pagamento e conexão da carteira
     ├── favorites.tsx            # Lista de interesse privada
@@ -346,6 +349,12 @@ Ao autenticar, a API mescla os itens e o cupom do visitante no carrinho da conta
 
 As rotas privadas usam `Authorization: Bearer <token>`. O interceptor do Axios anexa o token automaticamente. Favoritos, carteiras e pedidos são derivados exclusivamente da sessão autenticada e persistidos por `userId`; o cliente não escolhe a conta que será alterada. Usuários, sessões, avatares, carteiras, pedidos e estoque são persistidos somente no navegador para fins de demonstração; limpar os dados do site restaura as fixtures.
 
+### Reset dos dados simulados
+
+Para restaurar integralmente o cenário padrão, abra as ferramentas de desenvolvimento do navegador, acesse **Application → Storage**, selecione **Clear site data** para a origem da aplicação e recarregue a página. Isso remove contas criadas, sessão, carrinhos, favoritos, perfil, carteiras, pedidos e alterações de estoque persistidas pelo mock. O MSW reconstruirá as fixtures determinísticas na próxima inicialização.
+
+Os contextos criados pelo Playwright já começam isolados; portanto, nenhum reset manual é necessário entre execuções automatizadas.
+
 Contas determinísticas disponíveis para teste:
 
 | E-mail | Senha |
@@ -377,7 +386,9 @@ O MSW devolve erros `400`, `404` ou `409` conforme o problema encontrado.
 | `sort` | Seleciona `price-asc` ou `price-desc`; a ausência representa recentes. |
 | `page` | Página atual do catálogo. |
 | `scenario=empty` | Força um resultado vazio determinístico. |
+| `scenario=offline` | Simula indisponibilidade de conexão até a tentativa manual de recuperação. |
 | `scenario=slow` | Mantém o catálogo em carregamento lento para inspecionar o skeleton. |
+| `scenario=out-of-order` | Aplica latências diferentes para validar o descarte de respostas obsoletas. |
 | `scenario=recoverable-error` | Falha durante a tentativa automática e permite recuperação manual. |
 
 Busca, categorias, rede e preço são combinados com lógica AND. Categorias selecionadas entre si usam lógica OR.
@@ -401,10 +412,13 @@ Com o servidor executando em `http://localhost:5173`:
 | `/?sort=price-asc` | Ordenação por menor preço. |
 | `/?q=nao-existe` | Estado vazio produzido pela busca. |
 | `/?scenario=empty` | Estado vazio forçado pelo MSW. |
+| `/?scenario=offline` | Falha de conexão REST seguida de recuperação pelo botão de nova tentativa. |
 | `/?scenario=slow` | Carregamento lento determinístico e skeleton do catálogo. |
+| `/?scenario=out-of-order` | Latência determinística para reproduzir respostas de busca fora de ordem. |
 | `/?scenario=recoverable-error` | Falha temporária seguida de recuperação pelo botão de nova tentativa. |
 | `/nfts/nft-aurora-ape` | Detalhes, edições e compra do Aurora Ape. |
 | `/nfts/nft-inexistente` | Estado de NFT não encontrado. |
+| `/rota-inexistente` | Página 404 global do TanStack Router. |
 | `/cart` | Carrinho persistente, edição de itens e resumo financeiro. |
 | `/profile` | Perfil privado; solicita login quando não há sessão. |
 | `/wallets` | Cadastro e edição das carteiras principal e secundária. |
@@ -451,15 +465,16 @@ A base atual é validada continuamente com:
 
 ```bash
 npm run lint
+npm run typecheck
 npm run build
 npm run test:e2e
 npm run lighthouse
 ```
 
-A suíte possui 57 cenários validados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 114 execuções aprovadas. Ela cobre:
+A suíte possui 64 cenários. Os 63 cenários gerais percorrem Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), enquanto uma jornada dedicada percorre tablet (`768 × 1024`), totalizando 127 execuções quando executada integralmente. Ela cobre:
 
 - carregamento e navegação responsiva da homepage;
-- pesquisa, filtros combinados, ordenação, abas, paginação, histórico e estado vazio do catálogo;
+- pesquisa, filtros combinados, ordenação, abas, paginação, histórico, estado vazio e descarte de respostas fora de ordem no catálogo;
 - troca de edição, indisponibilidade e estado `404` nos detalhes;
 - inclusão, quantidade, persistência, remoção, cupons e totais do carrinho;
 - isolamento do carrinho entre visitante e contas, troca de usuário, expiração e retomada;
@@ -468,10 +483,12 @@ A suíte possui 57 cenários validados nos projetos Chromium desktop (`1440 × 9
 - edição do perfil, rejeição da senha atual incorreta e troca de senha com novo login.
 - upload, persistência, validação e remoção de avatar;
 - acesso privado, criação, edição, persistência, validação e isolamento de carteiras.
-- pagamento protegido, conexão, recusa e desconexão de carteira, pedido confirmado ou recusado, retomada idempotente após timeout e isolamento entre contas.
+- compra completa do catálogo ao recibo, pagamento protegido, conexão, recusa e desconexão de carteira, pedido confirmado ou recusado, bloqueio de cliques repetidos, retomada idempotente após timeout, expiração de sessão durante o checkout e isolamento entre contas.
 - atualização em tempo real de preço e estoque, remoção de edição esgotada, revisão de cotação, descarte de eventos duplicados ou antigos e reconciliação REST após queda do socket.
-- navegação por teclado, foco contido e restaurado em overlays, skeleton durante latência controlada e recuperação após falha temporária.
+- navegação por teclado, foco contido e restaurado em overlays, skeleton durante latência controlada e recuperação após falha HTTP ou indisponibilidade da conexão REST.
 - regressão visual da homepage, detalhe, carrinho e pagamento com oito baselines versionadas.
+- tratamento global de rota inexistente e retorno ao mercado.
+- ausência de overflow horizontal e disponibilidade dos fluxos centrais em `768 × 1024`.
 
 O Playwright gera o build de produção e inicia o preview com MSW antes dos testes. Falhas preservam screenshot e trace; resultados e relatórios HTML permanecem como artefatos locais e não são versionados.
 
@@ -485,12 +502,12 @@ Resultados finais da auditoria executada em 17 de outubro de 2026:
 
 | Perfil | Página | Performance | Accessibility | Best Practices | SEO | LCP | CLS | TBT |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Desktop | Início | 99 | 100 | 96 | 92 | 896 ms | 0.000 | 0 ms |
-| Desktop | Detalhe do NFT | 98 | 97 | 96 | 92 | 1002 ms | 0.000 | 0 ms |
-| Mobile | Início | 78 | 100 | 96 | 92 | 4199 ms | 0.005 | 40 ms |
-| Mobile | Detalhe do NFT | 75 | 97 | 96 | 92 | 4897 ms | 0.000 | 24 ms |
+| Desktop | Início | 99 | 100 | 96 | 92 | 909 ms | 0.000 | 0 ms |
+| Desktop | Detalhe do NFT | 98 | 97 | 96 | 92 | 1027 ms | 0.000 | 0 ms |
+| Mobile | Início | 77 | 100 | 96 | 92 | 4225 ms | 0.005 | 97 ms |
+| Mobile | Detalhe do NFT | 74 | 97 | 96 | 92 | 4927 ms | 0.000 | 73 ms |
 
-Todas as metas foram atingidas no desktop. No mobile, Accessibility, Best Practices e SEO também passaram; somente Performance ficou abaixo de 90. O diagnóstico do Lighthouse atribui 89% do LCP da página inicial e 71% do LCP do detalhe ao atraso de renderização. O caminho crítico inclui o bootstrap integral da SPA e do MSW, que inicializa a API REST simulada, banco persistente, sessão, carrinho e interceptadores usados pelos fluxos funcionais. No detalhe, a imagem principal ainda depende da resposta autoritativa da API para entrar na árvore visual, embora seja antecipada e não apresente desperdício apontado pela auditoria.
+Todas as metas foram atingidas no desktop. No mobile, Accessibility, Best Practices e SEO também passaram; somente Performance ficou abaixo de 90. O diagnóstico do Lighthouse identifica o atraso de renderização como a parcela dominante do LCP nas duas páginas. O caminho crítico inclui o bootstrap integral da SPA e do MSW, que inicializa a API REST simulada, banco persistente, sessão, carrinho e interceptadores usados pelos fluxos funcionais. No detalhe, a imagem principal ainda depende da resposta autoritativa da API para entrar na árvore visual, embora seja antecipada e não apresente desperdício apontado pela auditoria.
 
 Os valores baixos de TBT e CLS mostram que o problema não é bloqueio prolongado da thread principal nem instabilidade visual. O JavaScript não utilizado identificado na carga inicial concentra-se no runtime e nos handlers necessários para manter a demonstração funcional sem backend. Os relatórios foram mantidos sem desabilitar mocks, trocar fontes, omitir imagens ou simplificar funcionalidades exclusivamente para elevar a pontuação. Em uma implantação com backend real, o MSW sairia do bundle de produção; renderização no servidor ou prerenderização das rotas públicas reduziria adicionalmente o LCP móvel.
 

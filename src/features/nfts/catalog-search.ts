@@ -12,7 +12,9 @@ import {
 
 export type NftCatalogScenario =
   | "empty"
+  | "offline"
   | "slow"
+  | "out-of-order"
   | "recoverable-error";
 
 export type NftCatalogSearch = {
@@ -179,7 +181,9 @@ export function validateNftCatalogSearch(
 
   const scenario =
     search.scenario === "empty" ||
+    search.scenario === "offline" ||
     search.scenario === "slow" ||
+    search.scenario === "out-of-order" ||
     search.scenario === "recoverable-error"
       ? search.scenario
       : undefined;

@@ -247,11 +247,11 @@ export function NftEditionPurchasePanel({
               Limite de {purchaseLimit} por compra
             </p>
 
-            <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto] gap-3 md:flex">
+            <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto] gap-3 lg:flex">
               <Button
                 type="button"
                 size="lg"
-                className="w-full md:max-w-xs"
+                className="w-full lg:max-w-xs"
                 disabled={
                   cartOwnerId === null ||
                   addItemMutation.isPending

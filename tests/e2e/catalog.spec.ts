@@ -209,4 +209,82 @@ test.describe("catálogo", () => {
     ).toBeVisible();
     await expect(getCatalogCards(page)).toHaveCount(0);
   });
+
+  test("descarta uma resposta de busca que chegou fora de ordem", async ({
+    page,
+  }, testInfo) => {
+    await page.goto("/?scenario=out-of-order");
+
+    await expect(
+      getCatalogResults(page).getByRole("heading", {
+        name: "Aurora Ape",
+        exact: true,
+      }),
+    ).toBeVisible();
+
+    async function submitSearch(value: string) {
+      if (testInfo.project.name === "desktop-chromium") {
+        await page
+          .getByRole("button", { name: "Abrir busca" })
+          .click();
+      }
+
+      const searchInput = page
+        .getByRole("search")
+        .filter({ visible: true })
+        .getByLabel("Buscar NFTs");
+      const requestStarted = page.waitForRequest((request) => {
+        const url = new URL(request.url());
+
+        return (
+          url.pathname === "/api/nfts" &&
+          url.searchParams.get("q") === value
+        );
+      });
+
+      await searchInput.fill(value);
+      await searchInput.press("Enter");
+      await requestStarted;
+    }
+
+    await submitSearch("Aurora Ape");
+    await expect
+      .poll(() => getSearchParameter(page, "q"))
+      .toBe("Aurora Ape");
+
+    await submitSearch("Cyber Tiger");
+    await expect
+      .poll(() => getSearchParameter(page, "q"))
+      .toBe("Cyber Tiger");
+
+    const results = getCatalogResults(page);
+
+    await expect(
+      results.getByRole("heading", {
+        name: "Cyber Tiger",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      results.getByRole("heading", {
+        name: "Aurora Ape",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+
+    await page.waitForTimeout(1_500);
+
+    await expect(
+      results.getByRole("heading", {
+        name: "Cyber Tiger",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      results.getByRole("heading", {
+        name: "Aurora Ape",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+  });
 });

@@ -4,11 +4,13 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 
+import { NotFoundPage } from "@/components/errors/not-found-page";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { AuthProvider } from "@/features/auth/auth-provider";
 
 export const Route = createRootRoute({
   component: RootLayout,
+  notFoundComponent: NotFoundPage,
 });
 
 function RootLayout() {

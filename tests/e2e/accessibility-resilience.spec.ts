@@ -149,4 +149,26 @@ test.describe("acessibilidade e resiliência", () => {
       }),
     ).toBeVisible();
   });
+
+  test("recupera o catálogo após indisponibilidade da conexão", async ({
+    page,
+  }) => {
+    await page.goto("/?scenario=offline");
+    const catalog = page.getByRole("tabpanel");
+
+    await expect(catalog.getByRole("alert")).toContainText(
+      "Não foi possível carregar os NFTs.",
+    );
+
+    await catalog
+      .getByRole("button", { name: "Tentar novamente" })
+      .click();
+
+    await expect(
+      catalog.getByRole("heading", {
+        name: "Aurora Ape",
+        exact: true,
+      }),
+    ).toBeVisible();
+  });
 });

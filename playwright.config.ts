@@ -30,6 +30,7 @@ export default defineConfig({
   projects: [
     {
       name: "desktop-chromium",
+      testIgnore: "**/tablet.spec.ts",
       use: {
         ...devices["Desktop Chrome"],
         viewport: {
@@ -40,11 +41,23 @@ export default defineConfig({
     },
     {
       name: "mobile-chromium",
+      testIgnore: "**/tablet.spec.ts",
       use: {
         ...devices["Pixel 5"],
         viewport: {
           width: 390,
           height: 844,
+        },
+      },
+    },
+    {
+      name: "tablet-chromium",
+      testMatch: "**/tablet.spec.ts",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: {
+          width: 768,
+          height: 1024,
         },
       },
     },

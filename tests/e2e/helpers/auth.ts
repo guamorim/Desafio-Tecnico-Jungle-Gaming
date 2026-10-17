@@ -14,6 +14,48 @@ export const secondFixtureAccount = {
   password: "Jungle#2026",
 } as const;
 
+export async function expireCurrentSession(page: Page) {
+  await page.evaluate(() => {
+    const tokenStorageKey =
+      "jungle-nft-marketplace:auth-token:v1";
+    const authStorageKey =
+      "jungle-nft-marketplace:mock-auth:v1";
+    const token = localStorage.getItem(tokenStorageKey);
+    const serializedAuth =
+      localStorage.getItem(authStorageKey);
+
+    if (!token || !serializedAuth) {
+      throw new Error(
+        "Não foi possível preparar a expiração da sessão.",
+      );
+    }
+
+    const authState = JSON.parse(serializedAuth) as {
+      sessions: Record<
+        string,
+        {
+          expiresAt: string;
+        }
+      >;
+    };
+    const session = authState.sessions[token];
+
+    if (!session) {
+      throw new Error(
+        "A sessão autenticada não foi encontrada.",
+      );
+    }
+
+    session.expiresAt = new Date(
+      Date.now() - 1_000,
+    ).toISOString();
+    localStorage.setItem(
+      authStorageKey,
+      JSON.stringify(authState),
+    );
+  });
+}
+
 export async function openLoginDialog(
   page: Page,
 ): Promise<Locator> {

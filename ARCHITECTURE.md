@@ -296,6 +296,8 @@ empty   → orientação para remover filtros
 error   → mensagem e nova tentativa
 ```
 
+A rota raiz do TanStack Router define um `notFoundComponent` próprio. Assim, qualquer URL desconhecida recebe uma página 404 consistente e um caminho acessível de retorno ao mercado, enquanto recursos conhecidos mantêm seus estados específicos de inexistência.
+
 Controles interativos possuem rótulos acessíveis, foco visível e elementos semânticos. Abas utilizam `tablist`, `tab` e `tabpanel`.
 
 ## Decisões e trade-offs atuais
@@ -311,7 +313,7 @@ Controles interativos possuem rótulos acessíveis, foco visível e elementos se
 
 Esses trade-offs priorizam fluxos verificáveis e arquitetura extensível dentro do prazo de 48 horas.
 
-## Evolução planejada
+## Detalhamento dos fluxos implementados
 
 ### Carrinho e checkout
 
@@ -373,11 +375,11 @@ Pedidos pendentes usam eventos enquanto a conexão está saudável. Durante uma 
 
 ### Testes e qualidade
 
-Playwright está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. A suíte possui 57 cenários validados e produz 114 execuções aprovadas ao percorrer os dois projetos.
+Playwright está configurado sobre o build de produção em três projetos Chromium. Os 63 cenários gerais percorrem desktop `1440 × 900` e mobile `390 × 844`; uma jornada dedicada percorre tablet `768 × 1024`. A suíte possui 64 cenários e produz 127 execuções ao percorrer integralmente os projetos aplicáveis.
 
 ```text
 home.spec.ts          → carregamento e navegação responsiva
-catalog.spec.ts       → busca, filtros, ordenação, histórico e vazio
+catalog.spec.ts       → busca, filtros, ordenação, histórico, vazio e respostas fora de ordem
 nft-details.spec.ts   → edições, indisponibilidade e 404
 cart.spec.ts          → itens, quantidades, persistência, cupons e totais
 cart-isolation.spec.ts → visitante, troca de contas, expiração e retomada
@@ -385,9 +387,11 @@ auth.spec.ts          → acesso privado, login, cadastro, sessão e logout
 profile.spec.ts       → dados pessoais e alteração de senha
 favorites.spec.ts     → autenticação, persistência, isolamento e rollback
 avatar-wallets.spec.ts → avatar, carteiras, validação e isolamento
-checkout.spec.ts       → conexão, recusa, desconexão, confirmação, timeout e isolamento
+checkout.spec.ts       → jornada completa, expiração, clique repetido, confirmação, timeout e isolamento
 realtime.spec.ts       → preço, estoque, versões, reconexão e fallback REST
 accessibility-resilience.spec.ts → teclado, foco, skeleton, falha e recuperação
+routing.spec.ts        → rota 404 global e retorno ao mercado
+tablet.spec.ts         → catálogo, detalhe, carrinho, checkout e overflow em 768 px
 visual.spec.ts         → baselines de início, detalhe, carrinho e pagamento
 ```
 
@@ -401,9 +405,9 @@ A cobertura valida loading, vazio, erro recuperável, conflito de estoque e suce
 
 O Lighthouse CI executa sobre o mesmo build de produção e cenário padrão do MSW. As configurações versionadas separam os perfis desktop e mobile, auditam início e detalhe três vezes e persistem cada resultado em HTML e JSON. Um script consolida as medianas das categorias e de LCP, CLS e TBT, registra ferramentas e ambiente e aplica as metas somente depois que os dois perfis foram coletados, preservando diagnósticos mesmo quando uma meta falha.
 
-A medição final atingiu todas as metas no desktop: início com `99/100/96/92` e detalhe com `98/97/96/92` para Performance, Accessibility, Best Practices e SEO. No mobile, início registrou `78/100/96/92` e detalhe `75/97/96/92`. Os respectivos LCPs móveis foram `4199 ms` e `4897 ms`; CLS permaneceu em `0.005` e `0.000`, e TBT em `40 ms` e `24 ms`.
+A medição final atingiu todas as metas no desktop: início com `99/100/96/92` e detalhe com `98/97/96/92` para Performance, Accessibility, Best Practices e SEO. No mobile, início registrou `77/100/96/92` e detalhe `74/97/96/92`. Os respectivos LCPs móveis foram `4225 ms` e `4927 ms`; CLS permaneceu em `0.005` e `0.000`, e TBT em `97 ms` e `73 ms`.
 
-O diagnóstico associa a diferença de Performance móvel ao atraso de renderização do LCP: 89% na home e 71% no detalhe. A entrega inicializa no navegador a SPA e a infraestrutura completa da API simulada pelo MSW, incluindo persistência e interceptadores usados pelos fluxos testados. O detalhe também aguarda a resposta REST autoritativa antes de inserir a imagem principal. A auditoria final preserva imagens, Space Mono, mocks e funcionalidades reais; nenhuma variante reduzida foi criada para o Lighthouse. Em produção com backend, a remoção do MSW do bundle e SSR ou prerenderização das rotas públicas são as evoluções indicadas para reduzir esse caminho crítico.
+O diagnóstico associa a diferença de Performance móvel principalmente ao atraso de renderização do LCP. A entrega inicializa no navegador a SPA e a infraestrutura completa da API simulada pelo MSW, incluindo persistência e interceptadores usados pelos fluxos testados. O detalhe também aguarda a resposta REST autoritativa antes de inserir a imagem principal. A auditoria final preserva imagens, Space Mono, mocks e funcionalidades reais; nenhuma variante reduzida foi criada para o Lighthouse. Em produção com backend, a remoção do MSW do bundle e SSR ou prerenderização das rotas públicas são as evoluções indicadas para reduzir esse caminho crítico.
 
 ## Regras para novas features
 
