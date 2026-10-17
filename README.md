@@ -6,7 +6,9 @@ A aplicação simula a descoberta e a compra de NFTs com dados determinísticos,
 
 As principais decisões técnicas e os pontos de extensão estão documentados em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-> Status: implementação funcional e responsiva, com suíte E2E e auditoria Lighthouse concluídas. O deploy público é a próxima etapa da entrega.
+> Status: implementação funcional e responsiva, com suíte E2E, auditoria Lighthouse e deploy público concluídos.
+
+Aplicação publicada: [desafio-tecnico-jungle-gaming.vercel.app](https://desafio-tecnico-jungle-gaming.vercel.app/)
 
 ## Funcionalidades implementadas
 
@@ -445,7 +447,9 @@ O projeto pode ser importado diretamente do GitHub usando o preset do Vite. O bu
 
 O arquivo `vercel.json` encaminha rotas que não representam arquivos estáticos para `index.html`, permitindo acesso direto e atualização de páginas como `/nfts/nft-aurora-ape`, `/checkout`, `/profile` e `/orders/$orderId`.
 
-Não defina `VITE_ENABLE_MOCKS=false` no ambiente da demonstração: os mocks REST e Socket.IO precisam permanecer ativos no build publicado. Depois do deploy, valide a página inicial, o acesso direto a uma rota interna, o refresh dessa rota e uma atualização em tempo real. A URL pública deve ser adicionada a este README antes da entrega.
+Não defina `VITE_ENABLE_MOCKS=false` no ambiente da demonstração: os mocks REST e Socket.IO precisam permanecer ativos no build publicado. Depois do deploy, valide a página inicial, o acesso direto a uma rota interna, o refresh dessa rota e uma atualização em tempo real.
+
+A versão de produção está disponível em [desafio-tecnico-jungle-gaming.vercel.app](https://desafio-tecnico-jungle-gaming.vercel.app/).
 
 ## Decisões atuais
 
@@ -462,10 +466,6 @@ Não defina `VITE_ENABLE_MOCKS=false` no ambiente da demonstração: os mocks RE
 - O cadastro, a conexão, a recusa e a desconexão de carteiras são simulados e funcionais.
 - O projeto não realiza transações reais nem depende de blockchain, extensão de carteira ou gateway de pagamento; o link do explorador aponta para uma transação fictícia na Sepolia.
 - O Figma não fornece confirmação mobile. Essa tela foi projetada de forma autoral a partir do recibo desktop e do sistema visual mobile existente.
-
-## Próximas etapas
-
-- Deploy público.
 
 ## Qualidade
 
