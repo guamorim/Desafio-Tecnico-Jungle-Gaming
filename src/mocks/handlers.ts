@@ -45,6 +45,10 @@ import {
 } from "./mock-database";
 import { findMockCoupon } from "./fixtures/coupons";
 import { walletHandlers } from "./wallet-handlers";
+import {
+  emitOrderUpdated,
+  realtimeHandlers,
+} from "./realtime-handlers";
 
 const pageSize = 9;
 const newReleaseCutoff = Date.parse(
@@ -780,6 +784,7 @@ function resolveOrderIfDue(
 export const handlers = [
   ...authHandlers,
   ...walletHandlers,
+  ...realtimeHandlers,
   http.get("/api/nfts", async ({ request }) => {
     const url = new URL(request.url);
     const page = parsePage(
@@ -1714,8 +1719,21 @@ export const handlers = [
     saveMockOrder(order);
 
     if (input.scenario === "order-timeout") {
-      await delay(10_500);
+      // The backend accepted and persisted the order, but the client never
+      // received its response. A retry with the same idempotency key recovers
+      // this exact order after its simulated processing window has elapsed.
+      await delay(1_700);
+      return HttpResponse.error();
     }
+
+    setTimeout(() => {
+      const currentOrder = getMockDatabase().orders[order.id];
+
+      if (!currentOrder) return;
+      emitOrderUpdated(
+        toOrder(resolveOrderIfDue(currentOrder)),
+      );
+    }, 1_600);
 
     return HttpResponse.json(toOrder(order), {
       status: 202,

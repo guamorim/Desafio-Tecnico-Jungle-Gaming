@@ -16,25 +16,22 @@ function isMockingEnabledMessage(value: unknown) {
 async function startMocking() {
   const [
     { isCommonAssetRequest },
-    { HttpNetworkFrame },
     { worker },
   ] = await Promise.all([
     import("msw"),
-    import("msw/experimental"),
     import("./browser"),
   ]);
 
   await worker.start({
-    onUnhandledFrame({ frame, defaults }) {
+    onUnhandledRequest(request, print) {
       if (
-        frame instanceof HttpNetworkFrame &&
-        (frame.data.request.mode === "navigate" ||
-          isCommonAssetRequest(frame.data.request))
+        request.mode === "navigate" ||
+        isCommonAssetRequest(request)
       ) {
         return;
       }
 
-      defaults.warn();
+      print.warning();
     },
   });
 

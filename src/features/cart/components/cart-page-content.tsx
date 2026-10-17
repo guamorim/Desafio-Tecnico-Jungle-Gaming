@@ -7,6 +7,7 @@ import {
 import { Minus, Plus, Trash2 } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { useRealtime } from "@/features/realtime/use-realtime";
 
 import { getCartErrorMessage } from "../cart-error-message";
 import { applyCartCouponMutationOptions } from "../mutations/apply-cart-coupon-mutation";
@@ -25,6 +26,15 @@ export function CartPageContent({
 }: CartPageContentProps) {
   const [couponCode, setCouponCode] = useState("");
   const queryClient = useQueryClient();
+  const { connectionStatus, lastNftUpdate } = useRealtime();
+  const hasRealtimeCartUpdate = Boolean(
+    lastNftUpdate &&
+      cart.items.some(
+        (item) =>
+          item.nftId === lastNftUpdate.nftId &&
+          item.editionId === lastNftUpdate.edition.id,
+      ),
+  );
   const updateItemMutation = useMutation(
     updateCartItemMutationOptions(
       queryClient,
@@ -89,6 +99,26 @@ export function CartPageContent({
     removeItemMutation.mutate(itemId);
   }
 
+  function decreaseItem(
+    item: CartResponse["items"][number],
+  ) {
+    const maximumQuantity = Math.min(
+      item.edition.availableQuantity,
+      item.edition.maximumPurchaseQuantity,
+    );
+    const nextQuantity = Math.min(
+      item.quantity - 1,
+      maximumQuantity,
+    );
+
+    if (nextQuantity <= 0) {
+      removeItem(item.id);
+      return;
+    }
+
+    updateQuantity(item.id, nextQuantity);
+  }
+
   return (
     <div className="grid items-start overflow-hidden rounded-3xl bg-card md:grid-cols-[minmax(0,1fr)_20rem] md:gap-10 md:overflow-visible md:rounded-none md:bg-transparent lg:gap-16">
       <section
@@ -136,6 +166,24 @@ export function CartPageContent({
           </p>
         )}
 
+        {hasRealtimeCartUpdate && (
+          <p
+            role="status"
+            className="mb-3 rounded-lg border border-primary/40 bg-primary/10 px-4 py-3 text-sm"
+          >
+            Preço ou disponibilidade atualizados em tempo real. O resumo já usa a nova cotação da API.
+          </p>
+        )}
+
+        {connectionStatus === "disconnected" && (
+          <p
+            role="status"
+            className="mb-3 rounded-lg border px-4 py-3 text-xs text-muted-foreground"
+          >
+            Tempo real desconectado. Reconectando e conferindo o carrinho pela API…
+          </p>
+        )}
+
         <div className="hidden grid-cols-[minmax(0,1.6fr)_0.7fr_0.7fr_0.7fr_auto] gap-4 px-4 pb-2 text-sm font-bold md:grid">
           <span>NFT</span>
           <span>Preço</span>
@@ -168,6 +216,11 @@ export function CartPageContent({
                     <span className="block truncate text-xs text-muted-foreground md:hidden">
                       Edição: {item.edition.name}
                     </span>
+                    {item.edition.availableQuantity === 0 && (
+                      <span className="block text-xs font-bold text-destructive">
+                        Edição esgotada — remova o item
+                      </span>
+                    )}
                     <span className="hidden truncate text-sm text-muted-foreground md:block">
                       {item.nft.collectionName}
                     </span>
@@ -185,17 +238,7 @@ export function CartPageContent({
                       item.edition.maximumPurchaseQuantity,
                     )}
                     disabled={isMutating}
-                    onDecrease={() => {
-                      if (item.quantity === 1) {
-                        removeItem(item.id);
-                        return;
-                      }
-
-                      updateQuantity(
-                        item.id,
-                        item.quantity - 1,
-                      );
-                    }}
+                    onDecrease={() => decreaseItem(item)}
                     onIncrease={() => {
                       updateQuantity(
                         item.id,
@@ -217,17 +260,7 @@ export function CartPageContent({
                     item.edition.maximumPurchaseQuantity,
                   )}
                   disabled={isMutating}
-                  onDecrease={() => {
-                    if (item.quantity === 1) {
-                      removeItem(item.id);
-                      return;
-                    }
-
-                    updateQuantity(
-                      item.id,
-                      item.quantity - 1,
-                    );
-                  }}
+                  onDecrease={() => decreaseItem(item)}
                   onIncrease={() => {
                     updateQuantity(
                       item.id,
@@ -450,7 +483,7 @@ function QuantityControl({
         className="rounded-full"
         disabled={disabled}
         aria-label={
-          quantity === 1
+          quantity === 1 || maximumQuantity === 0
             ? "Remover item"
             : "Diminuir quantidade"
         }

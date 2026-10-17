@@ -14,6 +14,7 @@ import { createUserCartOwnerId } from "@/features/cart/cart-owner-id";
 import { cartQueryKey } from "@/features/cart/queries/cart-query";
 import { nftViewerQueryKey } from "@/features/nfts/queries/nft-query-keys";
 import { ordersUserQueryKey } from "@/features/checkout/queries/order-query";
+import { RealtimeProvider } from "@/features/realtime/realtime-provider";
 import { walletsQueryKey } from "@/features/wallets/queries/wallets-query";
 import {
   AuthDialog,
@@ -117,18 +118,20 @@ export function AuthProvider({
         },
       }}
     >
-      {children}
+      <RealtimeProvider session={data?.session ?? null}>
+        {children}
 
-      <AuthDialog
-        mode={authMode ?? "login"}
-        open={authMode !== null}
-        onModeChange={setAuthMode}
-        onOpenChange={(open) => {
-          if (!open) {
-            setAuthMode(null);
-          }
-        }}
-      />
+        <AuthDialog
+          mode={authMode ?? "login"}
+          open={authMode !== null}
+          onModeChange={setAuthMode}
+          onOpenChange={(open) => {
+            if (!open) {
+              setAuthMode(null);
+            }
+          }}
+        />
+      </RealtimeProvider>
     </AuthContext.Provider>
   );
 }

@@ -39,6 +39,7 @@ import {
   walletProviderOptions,
 } from "@/features/wallets/types";
 import { getWalletErrorResponse } from "@/features/wallets/wallet-error";
+import { useRealtime } from "@/features/realtime/use-realtime";
 
 type CheckoutPageContentProps = {
   readonly cart: CartResponse;
@@ -119,6 +120,11 @@ export function CheckoutPageContent({
   wallets,
 }: CheckoutPageContentProps) {
   const queryClient = useQueryClient();
+  const { connectionStatus, lastNftUpdate } = useRealtime();
+  const [reviewedRealtimeEventId, setReviewedRealtimeEventId] =
+    useState<string | null>(null);
+  const [serverRequiresReview, setServerRequiresReview] =
+    useState(false);
   const initialWallet =
     wallets.items.find((wallet) => wallet.isPrimary) ??
     wallets.items[0];
@@ -175,6 +181,26 @@ export function CheckoutPageContent({
   const isConnecting =
     connectMutation.isPending ||
     disconnectMutation.isPending;
+  const affectedCartItem = lastNftUpdate
+    ? cart.items.find(
+        (item) =>
+          item.nftId === lastNftUpdate.nftId &&
+          item.editionId === lastNftUpdate.edition.id,
+      )
+    : undefined;
+  const realtimeReviewRequired = Boolean(
+    lastNftUpdate &&
+      affectedCartItem &&
+      lastNftUpdate.eventId !== reviewedRealtimeEventId,
+  );
+  const realtimeQuoteIsApplied = Boolean(
+    lastNftUpdate &&
+      affectedCartItem &&
+      affectedCartItem.edition.version >=
+        lastNftUpdate.edition.version,
+  );
+  const quoteNeedsReview =
+    realtimeReviewRequired || serverRequiresReview;
 
   function prepareNewAttempt() {
     createOrderMutation.reset();
@@ -227,6 +253,7 @@ export function CheckoutPageContent({
           const response = getOrderErrorResponse(error);
 
           if (response?.code === "QUOTE_CHANGED") {
+            setServerRequiresReview(true);
             void queryClient.invalidateQueries({
               queryKey: cartQueryKey(cart.ownerId),
               exact: true,
@@ -517,11 +544,54 @@ export function CheckoutPageContent({
           </p>
         )}
 
+        {quoteNeedsReview && (
+          <div
+            role="alert"
+            className="mb-4 space-y-3 rounded-lg border border-primary/50 bg-primary/10 p-3 text-xs"
+          >
+            <p>
+              A cotação mudou enquanto o pagamento estava aberto. Revise os novos valores antes de confirmar.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                createOrderMutation.reset();
+                setServerRequiresReview(false);
+                setReviewedRealtimeEventId(
+                  lastNftUpdate?.eventId ?? null,
+                );
+                setIdempotencyKey(crypto.randomUUID());
+              }}
+              disabled={
+                realtimeReviewRequired &&
+                !realtimeQuoteIsApplied
+              }
+            >
+              {realtimeReviewRequired &&
+              !realtimeQuoteIsApplied
+                ? "Atualizando cotação..."
+                : "Revisar novos valores"}
+            </Button>
+          </div>
+        )}
+
+        {connectionStatus === "disconnected" && (
+          <p role="status" className="mb-4 text-xs text-muted-foreground">
+            Reconectando ao tempo real e conferindo a cotação pela API…
+          </p>
+        )}
+
         <Button
           type="submit"
           size="lg"
           className="h-12 w-full rounded-full md:rounded-lg"
-          disabled={!isConnected || createOrderMutation.isPending}
+          disabled={
+            !isConnected ||
+            quoteNeedsReview ||
+            createOrderMutation.isPending
+          }
         >
           {createOrderMutation.isPending
             ? "Enviando pedido..."

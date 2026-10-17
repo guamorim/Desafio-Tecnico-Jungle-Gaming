@@ -350,20 +350,30 @@ Formulário de carteira
 
 A referência desktop foi reproduzida com menu lateral e duas colunas. Como o Figma não inclui uma versão mobile, essa composição é autoral: uma navegação compacta conecta perfil, carteiras e favoritos, enquanto cada carteira ocupa um cartão com campos em uma coluna. No checkout, o usuário escolhe uma carteira salva, rede e provedor, e pode conectar, recusar ou desconectar a sessão simulada antes de confirmar.
 
-### Tempo real
+### Tempo real e reconciliação
 
-Socket.IO atualizará estoque e disponibilidade. Eventos recebidos modificarão o cache do TanStack Query usando as mesmas query keys atuais.
+Um cliente Socket.IO único é controlado pelo `RealtimeProvider`. No navegador de demonstração, o servidor é simulado pelo MSW com `@mswjs/socket.io-binding`; trocar esse transporte pelo servidor real não altera os componentes consumidores. A inscrição da sessão envia apenas o token atual, e a desmontagem ou troca de usuário remove listeners e desconecta a inscrição anterior.
 
 ```text
-Socket.IO
-  → validação do evento
-  → atualização do cache
-  → React renderiza o novo estoque
+Socket.IO (`nft.updated` ou `order.updated`)
+  → validação estrutural do evento
+  → comparação de identidade e versão
+  → descarte de evento duplicado ou antigo
+  → atualização do cache do TanStack Query
+  → React renderiza o novo estado
+
+Reconexão
+  → refetch REST de queries ativas de NFTs, carrinho e pedidos
+  → API volta a ser a fonte autoritativa
 ```
+
+Eventos de NFT carregam versões do NFT e da edição. O provider atualiza catálogo, detalhes e favoritos e invalida o carrinho para que seus totais sejam recalculados pela API. No checkout, uma alteração relevante bloqueia a confirmação até o usuário revisar explicitamente a nova cotação. Eventos de pedido são aceitos somente quando pertencem à sessão atual e têm versão mais recente.
+
+Pedidos pendentes usam eventos enquanto a conexão está saudável. Durante uma interrupção, a query ativa polling REST; ao reconectar, o provider reconcilia novamente o recurso pela API. Esse desenho evita depender da entrega perfeita do socket e mantém o REST como autoridade persistente.
 
 ### Testes e qualidade
 
-Playwright está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. A suíte possui 43 cenários validados e produz 86 execuções aprovadas ao percorrer os dois projetos.
+Playwright está configurado sobre o build de produção em dois projetos Chromium: desktop `1440 × 900` e mobile `390 × 844`. A suíte possui 49 cenários validados e produz 98 execuções aprovadas ao percorrer os dois projetos.
 
 ```text
 home.spec.ts          → carregamento e navegação responsiva
@@ -376,7 +386,10 @@ profile.spec.ts       → dados pessoais e alteração de senha
 favorites.spec.ts     → autenticação, persistência, isolamento e rollback
 avatar-wallets.spec.ts → avatar, carteiras, validação e isolamento
 checkout.spec.ts       → conexão, recusa, desconexão, confirmação, timeout e isolamento
+realtime.spec.ts       → preço, estoque, versões, reconexão e fallback REST
 ```
+
+Os 6 cenários de `realtime.spec.ts` são executados nos dois projetos e validam atualizações de preço e estoque no catálogo, detalhes e carrinho, remoção de edição esgotada, revisão de cotação no checkout, descarte de eventos duplicados ou antigos e retomada REST após interrupção do socket.
 
 Os testes observam a interface e os contratos acessíveis, restringindo seletores ao domínio relevante da página. Isso evita que conteúdo editorial visualmente semelhante seja confundido com resultados do catálogo. Helpers são compartilhados apenas quando representam uma operação de negócio completa, como autenticar uma conta ou adicionar uma edição ao carrinho.
 

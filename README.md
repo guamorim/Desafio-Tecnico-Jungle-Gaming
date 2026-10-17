@@ -2,11 +2,11 @@
 
 Marketplace de NFTs desenvolvido como solução para o [desafio frontend da Jungle](https://github.com/junglegaming/frontend-challenge).
 
-A aplicação simula a descoberta e a compra de NFTs com dados determinísticos, interface responsiva, autenticação persistente, checkout idempotente e uma arquitetura preparada para eventos em tempo real.
+A aplicação simula a descoberta e a compra de NFTs com dados determinísticos, interface responsiva, autenticação persistente, checkout idempotente e eventos em tempo real reconciliados com a API.
 
 As principais decisões técnicas e os pontos de extensão estão documentados em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-> Status: em desenvolvimento. Homepage, detalhes dos NFTs, carrinho, autenticação, perfil privado, avatar, favoritos, carteiras e checkout com pedidos estão funcionais e responsivos. Tempo real, auditoria final e deploy fazem parte das próximas etapas.
+> Status: em desenvolvimento. Homepage, detalhes dos NFTs, carrinho, autenticação, perfil privado, avatar, favoritos, carteiras, checkout com pedidos e a integração em tempo real estão funcionais e responsivos. Auditoria final e deploy fazem parte das próximas etapas.
 
 ## Funcionalidades implementadas
 
@@ -128,6 +128,17 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - Cenários mockados por query string para validação: `wallet-rejected`, `payment-refused` e `order-timeout`.
 - Nenhuma carteira real, blockchain ou cobrança externa é utilizada.
 
+### Atualizações em tempo real
+
+- Conexão efetiva com `socket.io-client` e servidor simulado por `@mswjs/socket.io-binding`.
+- Eventos `nft.updated` refletem preço e disponibilidade no catálogo, detalhes, carrinho e checkout.
+- Eventos `order.updated` atualizam o pedido sem polling enquanto o socket está conectado.
+- Eventos duplicados ou com versão antiga são descartados por identidade e versão do recurso.
+- Reconexões refazem pela API REST todas as consultas ativas de NFTs, carrinho e pedidos.
+- Trocas de sessão encerram a conexão anterior e criam uma nova inscrição vinculada ao token atual.
+- Mudanças de cotação no checkout bloqueiam a confirmação até uma revisão explícita dos novos valores.
+- Quando o socket cai, pedidos pendentes voltam temporariamente ao polling REST e continuam recuperáveis.
+
 ## Tecnologias
 
 - React 19
@@ -137,6 +148,7 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - TanStack Query e Query Devtools
 - Axios
 - MSW
+- Socket.IO Client e MSW Socket.IO Binding
 - Tailwind CSS 4
 - shadcn/ui com Base UI
 - Lucide React
@@ -144,7 +156,7 @@ As principais decisões técnicas e os pontos de extensão estão documentados e
 - ESLint
 - Playwright
 
-Socket.IO e Lighthouse fazem parte das próximas etapas do desafio. O Playwright cobre os fluxos concluídos em Chromium desktop e mobile.
+Lighthouse faz parte das próximas etapas do desafio. O Playwright cobre os fluxos concluídos em Chromium desktop e mobile.
 
 ## Requisitos
 
@@ -417,10 +429,9 @@ Somente o valor exato `false` desabilita os mocks. Variáveis públicas do Vite 
 
 ## Próximas etapas
 
-- Atualizações de estoque com Socket.IO.
 - Cenários adicionais de falha e regressão visual com Playwright.
-- Auditoria Lighthouse, revisão final da documentação e deploy.
-- Auditoria e documentação do Lighthouse.
+- Auditoria Lighthouse e otimização do bundle.
+- Revisão final da documentação.
 - Deploy público.
 
 ## Qualidade
@@ -433,7 +444,7 @@ npm run build
 npm run test:e2e
 ```
 
-A suíte possui 43 cenários validados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 86 execuções aprovadas. Ela cobre:
+A suíte possui 49 cenários validados nos projetos Chromium desktop (`1440 × 900`) e mobile (`390 × 844`), totalizando 98 execuções aprovadas. Ela cobre:
 
 - carregamento e navegação responsiva da homepage;
 - pesquisa, filtros combinados, ordenação, abas, paginação, histórico e estado vazio do catálogo;
@@ -446,6 +457,7 @@ A suíte possui 43 cenários validados nos projetos Chromium desktop (`1440 × 9
 - upload, persistência, validação e remoção de avatar;
 - acesso privado, criação, edição, persistência, validação e isolamento de carteiras.
 - pagamento protegido, conexão, recusa e desconexão de carteira, pedido confirmado ou recusado, retomada idempotente após timeout e isolamento entre contas.
+- atualização em tempo real de preço e estoque, remoção de edição esgotada, revisão de cotação, descarte de eventos duplicados ou antigos e reconciliação REST após queda do socket.
 
 O Playwright gera o build de produção e inicia o preview com MSW antes dos testes. Falhas preservam screenshot e trace; resultados e relatórios HTML permanecem como artefatos locais e não são versionados.
 

@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Check, CircleAlert, Clock3, ExternalLink, ReceiptText } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
+import { useRealtime } from "@/features/realtime/use-realtime";
 import type { Order } from "../types";
 
 type OrderReceiptProps = {
@@ -16,6 +17,7 @@ function formatOrderDate(value: string) {
 }
 
 export function OrderReceipt({ order }: OrderReceiptProps) {
+  const { connectionStatus } = useRealtime();
   const isPending = order.status === "pending";
   const isConfirmed = order.status === "confirmed";
 
@@ -51,6 +53,11 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
       </header>
 
       <div className="space-y-6 p-5 md:p-8">
+        {isPending && connectionStatus === "disconnected" && (
+          <p role="status" className="rounded-lg border bg-background px-3 py-2 text-xs text-muted-foreground">
+            Tempo real interrompido. O pedido continua sendo consultado pela API até a reconexão.
+          </p>
+        )}
         <dl className="grid gap-4 text-xs sm:grid-cols-2">
           <div>
             <dt className="text-muted-foreground">Pedido</dt>

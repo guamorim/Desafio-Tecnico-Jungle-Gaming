@@ -12,6 +12,7 @@ import { cartQueryKey } from "@/features/cart/queries/cart-query";
 import { OrderReceipt } from "@/features/checkout/components/order-receipt";
 import { orderQueryOptions } from "@/features/checkout/queries/order-query";
 import { nftViewerQueryKey } from "@/features/nfts/queries/nft-query-keys";
+import { useRealtime } from "@/features/realtime/use-realtime";
 import { restoreMocking } from "@/mocks/enable-mocking";
 
 export const Route = createFileRoute("/orders/$orderId")({
@@ -22,8 +23,13 @@ function OrderPage() {
   const { orderId } = Route.useParams();
   const queryClient = useQueryClient();
   const { session, isSessionPending, openLogin } = useAuth();
+  const { connectionStatus } = useRealtime();
   const { data: order, error, isPending, refetch } = useQuery({
-    ...orderQueryOptions(session?.user.id ?? "anonymous", orderId),
+    ...orderQueryOptions(
+      session?.user.id ?? "anonymous",
+      orderId,
+      connectionStatus !== "connected",
+    ),
     enabled: Boolean(session) && !isSessionPending,
   });
 
