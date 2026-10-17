@@ -154,7 +154,7 @@ const updateNftHandler = http.post(
 
     if (!currentNft || !currentEdition) {
       return HttpResponse.json(
-        { message: "NFT ou edição não encontrada." },
+        { message: "Não foi possível encontrar o NFT ou a edição." },
         { status: 404 },
       );
     }

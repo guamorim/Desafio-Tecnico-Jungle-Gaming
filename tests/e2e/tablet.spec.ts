@@ -40,7 +40,7 @@ test.describe("responsividade em tablet", () => {
       .getByLabel("Endereço da carteira")
       .fill(tabletWalletAddress);
     await primaryWallet
-      .getByRole("button", { name: "Adicionar principal" })
+      .getByRole("button", { name: "Adicionar carteira principal" })
       .click();
     await expect(primaryWallet.getByRole("status")).toHaveText(
       "Carteira principal salva com sucesso.",

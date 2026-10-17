@@ -183,7 +183,7 @@ test.describe("tempo real e reconciliação REST", () => {
 
     await expect(
       page.getByTestId("realtime-connection-status"),
-    ).toHaveText("Tempo real desconectado");
+    ).toHaveText("Conexão em tempo real interrompida");
     await expect(
       page.getByText("O pedido continua sendo consultado pela API"),
     ).toBeVisible();
@@ -195,6 +195,6 @@ test.describe("tempo real e reconciliação REST", () => {
     ).toBeVisible({ timeout: 10_000 });
     await expect(
       page.getByTestId("realtime-connection-status"),
-    ).toHaveText("Tempo real conectado", { timeout: 10_000 });
+    ).toHaveText("Conexão em tempo real ativa", { timeout: 10_000 });
   });
 });

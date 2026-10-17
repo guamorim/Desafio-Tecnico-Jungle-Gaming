@@ -173,7 +173,11 @@ export function NftEditionPurchasePanel({
         >
           {isUnavailable
             ? "Edição indisponível"
-            : `${selectedEdition.availableQuantity} unidades disponíveis`}
+            : `${selectedEdition.availableQuantity} ${
+                selectedEdition.availableQuantity === 1
+                  ? "unidade disponível"
+                  : "unidades disponíveis"
+              }`}
         </p>
       </fieldset>
 

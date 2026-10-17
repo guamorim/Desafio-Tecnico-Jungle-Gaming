@@ -79,7 +79,7 @@ export function NftDetailTabs({
         >
           <p>
             {nft.name} é uma obra digital da coleção {nft.collectionName}.
-            Cada atributo fica armazenado nos metadados do token e é
+            Os atributos ficam armazenados nos metadados do token, que é
             verificado na rede {networkLabel}. A obra explora identidade,
             movimento e luz em um mundo digital sem fronteiras.
           </p>
@@ -88,16 +88,16 @@ export function NftDetailTabs({
             A propriedade inclui acesso à arte em alta resolução e
             um registro permanente da edição adquirida. O criador
             {` ${nft.creatorName} `}
-            recebe {nft.royaltyPercentage}% de direitos autorais nas
-            vendas secundárias, apoiando novos trabalhos e lançamentos
-            da comunidade.
+            recebe {nft.royaltyPercentage}% do valor das vendas
+            secundárias em direitos autorais, apoiando novos trabalhos
+            e lançamentos da comunidade.
           </p>
 
           <dl className="space-y-4 border-t pt-5">
             <div className="space-y-1">
               <dt className="font-semibold text-foreground">Rede</dt>
               <dd>
-                Cunhado na {networkLabel}, com procedência imutável e
+                Cunhado na rede {networkLabel}, com procedência imutável e
                 metadados armazenados no IPFS.
               </dd>
             </div>
@@ -143,7 +143,10 @@ export function NftDetailTabs({
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                {nft.reviewCount} avaliações
+                {nft.reviewCount}{" "}
+                {nft.reviewCount === 1
+                  ? "avaliação"
+                  : "avaliações"}
               </p>
             </div>
           </div>

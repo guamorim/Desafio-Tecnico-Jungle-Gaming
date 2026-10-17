@@ -186,7 +186,7 @@ export function WalletForm({
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
             {isPrimary
-              ? "Edite os dados da carteira usada como padrão no checkout."
+              ? "Edite os dados da carteira usada como padrão durante o pagamento."
               : "Cadastre uma segunda carteira para escolher durante o pagamento."}
           </p>
         </div>
@@ -345,7 +345,7 @@ export function WalletForm({
             ? "Salvando..."
             : wallet
               ? "Salvar carteira"
-              : `Adicionar ${isPrimary ? "principal" : "secundária"}`}
+              : `Adicionar carteira ${isPrimary ? "principal" : "secundária"}`}
         </Button>
       </form>
     </section>

@@ -16,7 +16,7 @@ export async function createPrimaryWallet(page: Page) {
     .getByLabel("Endereço da carteira")
     .fill(checkoutWalletAddress);
   await primaryWallet
-    .getByRole("button", { name: "Adicionar principal" })
+    .getByRole("button", { name: "Adicionar carteira principal" })
     .click();
 
   await expect(primaryWallet.getByRole("status")).toHaveText(

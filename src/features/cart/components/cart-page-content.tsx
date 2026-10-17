@@ -134,7 +134,10 @@ export function CartPageContent({
           </h2>
           <div className="ml-auto flex items-center gap-3">
             <p className="hidden text-sm text-muted-foreground md:block">
-              {cart.totalQuantity} unidades
+              {cart.totalQuantity}{" "}
+              {cart.totalQuantity === 1
+                ? "unidade"
+                : "unidades"}
             </p>
             <Button
               type="button"
@@ -171,7 +174,7 @@ export function CartPageContent({
             role="status"
             className="mb-3 rounded-lg border border-primary/40 bg-primary/10 px-4 py-3 text-sm"
           >
-            Preço ou disponibilidade atualizados em tempo real. O resumo já usa a nova cotação da API.
+            Os dados de preço e disponibilidade foram atualizados em tempo real. O resumo já usa a nova cotação da API.
           </p>
         )}
 
@@ -180,7 +183,7 @@ export function CartPageContent({
             role="status"
             className="mb-3 rounded-lg border px-4 py-3 text-xs text-muted-foreground"
           >
-            Tempo real desconectado. Reconectando e conferindo o carrinho pela API…
+            Conexão em tempo real interrompida. Reconectando e conferindo o carrinho pela API…
           </p>
         )}
 

@@ -30,7 +30,7 @@ export function MobileBottomNavigation({
 
   return (
     <nav
-      aria-label="Navegação principal mobile"
+      aria-label="Navegação principal em dispositivos móveis"
       className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:hidden"
     >
       <div className="pointer-events-auto relative mx-auto grid min-h-20 max-w-md grid-cols-5 items-end rounded-[2rem] border bg-card px-3 pb-3 pt-5 shadow-2xl shadow-black/50">
@@ -87,7 +87,7 @@ export function MobileBottomNavigation({
           }
           aria-label={
             cartItemCount > 0
-              ? `Carrinho com ${cartItemCount} unidades`
+              ? `Carrinho com ${cartItemCount} ${cartItemCount === 1 ? "unidade" : "unidades"}`
               : "Carrinho vazio"
           }
           className={`${navigationItemClassName} ${activeItem === "cart" ? "text-primary" : ""}`}

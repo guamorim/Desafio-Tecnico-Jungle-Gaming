@@ -43,7 +43,7 @@ export function NftGallery({
           <button
             key={edition.id}
             type="button"
-            aria-label={`Selecionar edição ${edition.name}, imagem ${index + 1} de ${nftName}`}
+            aria-label={`Selecionar edição ${edition.name}, imagem ${index + 1} do NFT ${nftName}`}
             aria-pressed={edition.id === activeItem.edition.id}
             className={cn(
               "aspect-square w-full overflow-hidden rounded-lg border-2 bg-muted outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",

@@ -15,11 +15,11 @@ export function NftCatalogEmptyState() {
         id="nft-empty-state-title"
         className="mt-4 text-xl font-semibold tracking-tight"
       >
-        No NFTs found
+        Nenhum NFT encontrado
       </h2>
 
       <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-        There are no digital collectibles to display right now.
+        Não há itens digitais para exibir no momento.
       </p>
     </section>
   );

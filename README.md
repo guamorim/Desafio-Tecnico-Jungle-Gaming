@@ -502,10 +502,10 @@ Resultados finais da auditoria executada em 17 de outubro de 2026:
 
 | Perfil | Página | Performance | Accessibility | Best Practices | SEO | LCP | CLS | TBT |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Desktop | Início | 99 | 100 | 96 | 92 | 909 ms | 0.000 | 0 ms |
-| Desktop | Detalhe do NFT | 98 | 97 | 96 | 92 | 1027 ms | 0.000 | 0 ms |
-| Mobile | Início | 77 | 100 | 96 | 92 | 4225 ms | 0.005 | 97 ms |
-| Mobile | Detalhe do NFT | 74 | 97 | 96 | 92 | 4927 ms | 0.000 | 73 ms |
+| Desktop | Início | 98 | 100 | 96 | 92 | 953 ms | 0.000 | 0 ms |
+| Desktop | Detalhe do NFT | 98 | 97 | 96 | 92 | 1087 ms | 0.000 | 0 ms |
+| Mobile | Início | 77 | 100 | 96 | 92 | 4228 ms | 0.005 | 71 ms |
+| Mobile | Detalhe do NFT | 74 | 97 | 96 | 92 | 4914 ms | 0.000 | 63 ms |
 
 Todas as metas foram atingidas no desktop. No mobile, Accessibility, Best Practices e SEO também passaram; somente Performance ficou abaixo de 90. O diagnóstico do Lighthouse identifica o atraso de renderização como a parcela dominante do LCP nas duas páginas. O caminho crítico inclui o bootstrap integral da SPA e do MSW, que inicializa a API REST simulada, banco persistente, sessão, carrinho e interceptadores usados pelos fluxos funcionais. No detalhe, a imagem principal ainda depende da resposta autoritativa da API para entrar na árvore visual, embora seja antecipada e não apresente desperdício apontado pela auditoria.
 

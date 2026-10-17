@@ -25,7 +25,7 @@ export function NftCard({ nft }: NftCardProps) {
           <div className="aspect-square overflow-hidden bg-muted">
             <img
               src={nft.imageUrl}
-              alt={`Artwork for ${nft.name}`}
+              alt={`Arte do NFT ${nft.name}`}
               width={640}
               height={640}
               loading="lazy"
@@ -61,7 +61,10 @@ export function NftCard({ nft }: NftCardProps) {
               </div>
 
               <p className="text-sm text-muted-foreground">
-                {nft.availableQuantity} disponíveis
+                {nft.availableQuantity}{" "}
+                {nft.availableQuantity === 1
+                  ? "disponível"
+                  : "disponíveis"}
               </p>
             </div>
           </div>

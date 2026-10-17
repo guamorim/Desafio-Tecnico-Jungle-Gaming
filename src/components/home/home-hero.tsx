@@ -29,12 +29,11 @@ export function HomeHero() {
               id="home-hero-title"
               className="text-[clamp(1.65rem,7vw,2.25rem)] font-bold uppercase leading-[1.45] tracking-tight md:max-w-2xl md:text-5xl md:leading-[1.6]"
             >
-              Seja dono da{" "}
               <span className="md:hidden">
-                cultura digital
+                Seja dono da cultura digital
               </span>
               <span className="hidden md:inline">
-                futuro da arte digital
+                Seja dono do futuro da arte digital
               </span>
             </h1>
 

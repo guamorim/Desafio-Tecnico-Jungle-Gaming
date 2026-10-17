@@ -91,7 +91,7 @@ export function calculateEthPercentage(
     percentage > 100
   ) {
     throw new RangeError(
-      "A porcentagem deve ser um inteiro entre 0 e 100.",
+      "A porcentagem deve ser um número inteiro entre 0 e 100.",
     );
   }
 

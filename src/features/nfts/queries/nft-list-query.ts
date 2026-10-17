@@ -10,6 +10,10 @@ export function nftListQueryOptions(
   params: ListNftsParams = {},
   viewerId: string | null = null,
 ) {
+  const requiresManualRetry =
+    params.scenario === "offline" ||
+    params.scenario === "recoverable-error";
+
   return queryOptions({
     queryKey: [
       ...nftListQueryKey(viewerId),
@@ -17,5 +21,6 @@ export function nftListQueryOptions(
     ] as const,
     queryFn: ({ signal }) =>
       listNfts(params, { signal }),
+    ...(requiresManualRetry ? { retry: false } : {}),
   });
 }

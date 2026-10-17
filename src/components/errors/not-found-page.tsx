@@ -32,7 +32,7 @@ export function NotFoundPage() {
             Página não encontrada
           </h1>
           <p className="mt-4 max-w-md text-sm leading-6 text-muted-foreground md:text-base">
-            O endereço acessado não existe ou deixou de fazer parte do mercado.
+            A página acessada não existe ou não está mais disponível.
             Volte ao início para continuar explorando os NFTs.
           </p>
 

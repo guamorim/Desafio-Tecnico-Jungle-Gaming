@@ -19,7 +19,7 @@ test("carrega a homepage e o catálogo", async ({
   ).toBeVisible();
 
   const mobileNavigation = page.getByRole("navigation", {
-    name: "Navegação principal mobile",
+    name: "Navegação principal em dispositivos móveis",
   });
 
   if (testInfo.project.name === "mobile-chromium") {

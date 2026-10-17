@@ -122,7 +122,7 @@ function CheckoutPage() {
           <div className="space-y-2">
             <h1 className="text-2xl font-bold">Cadastre uma carteira</h1>
             <p className="text-sm text-muted-foreground">
-              Você precisa de uma carteira cadastrada para conectar e confirmar a compra.
+              Você precisa cadastrar uma carteira para conectá-la e confirmar a compra.
             </p>
           </div>
           <Link to="/wallets" className={buttonVariants()}>

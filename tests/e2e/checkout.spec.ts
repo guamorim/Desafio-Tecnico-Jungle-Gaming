@@ -28,7 +28,7 @@ async function createCheckoutWallet(page: Page) {
     .getByLabel("Endereço da carteira")
     .fill(checkoutWalletAddress);
   await primaryWallet
-    .getByRole("button", { name: "Adicionar principal" })
+    .getByRole("button", { name: "Adicionar carteira principal" })
     .click();
 
   await expect(primaryWallet.getByRole("status")).toHaveText(
@@ -191,7 +191,7 @@ test.describe("pagamento, carteira e pedidos", () => {
       .click();
 
     await expect(page.getByRole("alert")).toHaveText(
-      "A conexão foi recusada na carteira simulada.",
+      "A conexão foi recusada pela carteira simulada.",
     );
     await expect(
       page.getByRole("button", { name: "Confirmar compra" }),

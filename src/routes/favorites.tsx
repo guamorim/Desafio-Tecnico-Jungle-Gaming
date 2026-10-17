@@ -107,7 +107,7 @@ function FavoritesPage() {
             Sua lista está vazia
           </h2>
           <p className="text-sm text-muted-foreground">
-            Favorite NFTs no mercado para encontrá-los rapidamente aqui.
+            Adicione NFTs aos favoritos no mercado para encontrá-los rapidamente aqui.
           </p>
           <Link
             to="/"

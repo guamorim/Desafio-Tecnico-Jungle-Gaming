@@ -146,6 +146,25 @@ function HomePage() {
     });
   }
 
+  async function handleCatalogRetry() {
+    await restoreMocking();
+
+    if (
+      catalogSearch.scenario === "offline" ||
+      catalogSearch.scenario === "recoverable-error"
+    ) {
+      await navigate({
+        search: (currentSearch) => ({
+          ...currentSearch,
+          scenario: undefined,
+        }),
+      });
+      return;
+    }
+
+    await refetch();
+  }
+
   let catalogContent: ReactNode;
   let catalogDescription: string;
 
@@ -167,7 +186,7 @@ function HomePage() {
 
           <Button
             onClick={() => {
-              void restoreMocking().then(() => refetch());
+              void handleCatalogRetry();
             }}
           >
             Tentar novamente
@@ -176,8 +195,11 @@ function HomePage() {
       </section>
     );
   } else {
-    catalogDescription =
-      `Explore ${data.pagination.totalItems} itens digitais de criadores independentes.`;
+    catalogDescription = `Explore ${data.pagination.totalItems} ${
+      data.pagination.totalItems === 1
+        ? "item digital"
+        : "itens digitais"
+    } de criadores independentes.`;
 
     catalogContent =
       data.items.length === 0 ? (

@@ -200,7 +200,7 @@ const nftEditorialMetadata = {
   "nft-aurora-ape": {
     attributes: ["Óculos", "Aurora", "Raro"],
     description:
-      "Um colecionável digital 1/50 da coleção Jungle Genesis, inspirado pelas luzes da aurora e verificado na Ethereum.",
+      "Um colecionável digital da edição 1/50 da coleção Jungle Genesis, inspirado pelas luzes da aurora e verificado na rede Ethereum.",
     rating: "4.8",
     reviewCount: 19,
   },
@@ -235,7 +235,7 @@ const nftEditorialMetadata = {
   "nft-neon-vessel": {
     attributes: ["Avatar", "Neon", "Utilitário"],
     description:
-      "Um avatar utilitário da Jungle Genesis que funciona como identidade visual e passe de acesso para experiências da comunidade.",
+      "Um avatar utilitário da Jungle Genesis que funciona como identidade visual e passe de acesso a experiências da comunidade.",
     rating: "4.5",
     reviewCount: 11,
   },

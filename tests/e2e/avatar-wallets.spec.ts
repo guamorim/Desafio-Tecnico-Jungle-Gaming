@@ -51,7 +51,7 @@ async function createPrimaryWallet(
     .getByLabel("Endereço da carteira")
     .fill(address);
   await primary
-    .getByRole("button", { name: "Adicionar principal" })
+    .getByRole("button", { name: "Adicionar carteira principal" })
     .click();
 
   await expect(primary.getByRole("status")).toHaveText(
@@ -175,7 +175,7 @@ test.describe("carteiras do colecionador", () => {
 
     await addressInput.fill(primaryAddress);
     await secondary
-      .getByRole("button", { name: "Adicionar secundária" })
+      .getByRole("button", { name: "Adicionar carteira secundária" })
       .click();
 
     await expect(
@@ -184,7 +184,7 @@ test.describe("carteiras do colecionador", () => {
 
     await addressInput.fill(secondaryAddress);
     await secondary
-      .getByRole("button", { name: "Adicionar secundária" })
+      .getByRole("button", { name: "Adicionar carteira secundária" })
       .click();
 
     await expect(secondary.getByRole("status")).toHaveText(

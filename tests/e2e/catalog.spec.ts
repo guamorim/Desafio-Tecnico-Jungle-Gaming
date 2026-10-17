@@ -204,7 +204,7 @@ test.describe("catálogo", () => {
 
     await expect(
       results.getByRole("heading", {
-        name: "No NFTs found",
+        name: "Nenhum NFT encontrado",
       }),
     ).toBeVisible();
     await expect(getCatalogCards(page)).toHaveCount(0);

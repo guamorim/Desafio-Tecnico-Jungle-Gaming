@@ -94,7 +94,7 @@ export function DesktopDetailHeader({
             <div className="relative">
               <Link
                 to="/cart"
-                aria-label={`Abrir carrinho com ${cartItemCount} unidades`}
+                aria-label={`Abrir carrinho com ${cartItemCount} ${cartItemCount === 1 ? "unidade" : "unidades"}`}
                 className={buttonVariants({
                   variant: "ghost",
                   size: "icon",

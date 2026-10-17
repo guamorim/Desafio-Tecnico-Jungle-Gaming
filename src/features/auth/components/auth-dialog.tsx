@@ -63,7 +63,7 @@ export function AuthDialog({
 
           <Dialog.Description className="mt-2 text-center text-xs text-muted-foreground">
             {mode === "login"
-              ? "Entre para gerenciar sua carteira, coleção e perfil." 
+              ? "Entre para gerenciar sua carteira, sua coleção e seu perfil."
               : "Crie sua conta de colecionador para começar."}
           </Dialog.Description>
 

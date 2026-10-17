@@ -540,7 +540,7 @@ export function CheckoutPageContent({
         {createOrderMutation.isError && (
           <p role="alert" className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs">
             {orderError?.message ??
-              "Não foi possível enviar o pedido. Tente novamente com a mesma tentativa."}
+              "Não foi possível enviar o pedido. Tente novamente; a compra não será duplicada."}
           </p>
         )}
 
@@ -579,7 +579,7 @@ export function CheckoutPageContent({
 
         {connectionStatus === "disconnected" && (
           <p role="status" className="mb-4 text-xs text-muted-foreground">
-            Reconectando ao tempo real e conferindo a cotação pela API…
+            Reconectando ao serviço em tempo real e conferindo a cotação pela API…
           </p>
         )}
 

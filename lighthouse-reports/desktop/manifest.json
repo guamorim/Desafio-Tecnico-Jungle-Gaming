@@ -2,10 +2,10 @@
   {
     "url": "http://127.0.0.1:4173/",
     "isRepresentativeRun": false,
-    "htmlPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_08_02_53.report.html",
-    "jsonPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_08_02_53.report.json",
+    "htmlPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_09_01_00.report.html",
+    "jsonPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_09_01_00.report.json",
     "summary": {
-      "performance": 0.99,
+      "performance": 0.98,
       "accessibility": 1,
       "best-practices": 0.96,
       "seo": 0.92
@@ -14,10 +14,10 @@
   {
     "url": "http://127.0.0.1:4173/",
     "isRepresentativeRun": false,
-    "htmlPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_08_03_26.report.html",
-    "jsonPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_08_03_26.report.json",
+    "htmlPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_09_01_19.report.html",
+    "jsonPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_09_01_19.report.json",
     "summary": {
-      "performance": 0.99,
+      "performance": 0.98,
       "accessibility": 1,
       "best-practices": 0.96,
       "seo": 0.92
@@ -26,8 +26,8 @@
   {
     "url": "http://127.0.0.1:4173/nfts/nft-aurora-ape",
     "isRepresentativeRun": false,
-    "htmlPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_08_03_43.report.html",
-    "jsonPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_08_03_43.report.json",
+    "htmlPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_09_01_55.report.html",
+    "jsonPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_09_01_55.report.json",
     "summary": {
       "performance": 0.98,
       "accessibility": 0.97,
@@ -38,10 +38,10 @@
   {
     "url": "http://127.0.0.1:4173/nfts/nft-aurora-ape",
     "isRepresentativeRun": false,
-    "htmlPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_08_04_16.report.html",
-    "jsonPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_08_04_16.report.json",
+    "htmlPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_09_02_11.report.html",
+    "jsonPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_09_02_11.report.json",
     "summary": {
-      "performance": 0.97,
+      "performance": 0.98,
       "accessibility": 0.97,
       "best-practices": 0.96,
       "seo": 0.92
@@ -50,10 +50,10 @@
   {
     "url": "http://127.0.0.1:4173/",
     "isRepresentativeRun": true,
-    "htmlPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_08_03_10.report.html",
-    "jsonPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_08_03_10.report.json",
+    "htmlPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_09_01_37.report.html",
+    "jsonPath": "lighthouse-reports/desktop/127_0_0_1--2026_10_17_09_01_37.report.json",
     "summary": {
-      "performance": 0.99,
+      "performance": 0.98,
       "accessibility": 1,
       "best-practices": 0.96,
       "seo": 0.92
@@ -62,8 +62,8 @@
   {
     "url": "http://127.0.0.1:4173/nfts/nft-aurora-ape",
     "isRepresentativeRun": true,
-    "htmlPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_08_03_58.report.html",
-    "jsonPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_08_03_58.report.json",
+    "htmlPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_09_02_28.report.html",
+    "jsonPath": "lighthouse-reports/desktop/127_0_0_1-nfts_nft_aurora_ape-2026_10_17_09_02_28.report.json",
     "summary": {
       "performance": 0.98,
       "accessibility": 0.97,

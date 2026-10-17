@@ -432,7 +432,7 @@ export const walletHandlers = [
         return HttpResponse.json(
           {
             message:
-              "A conexão foi recusada na carteira simulada.",
+              "A conexão foi recusada pela carteira simulada.",
           } satisfies WalletErrorResponse,
           { status: 409 },
         );

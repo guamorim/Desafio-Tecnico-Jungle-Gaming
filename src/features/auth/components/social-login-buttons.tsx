@@ -14,8 +14,8 @@ export function SocialLoginButtons() {
         variant="outline"
         className="w-full"
         disabled
-        title="Login com Google indisponível"
-        aria-label="Login com Google indisponível"
+        title="Autenticação com Google indisponível"
+        aria-label="Autenticação com Google indisponível"
       >
         <span
           aria-hidden="true"
@@ -31,8 +31,8 @@ export function SocialLoginButtons() {
         variant="outline"
         className="w-full"
         disabled
-        title="Login com Facebook indisponível"
-        aria-label="Login com Facebook indisponível"
+        title="Autenticação com Facebook indisponível"
+        aria-label="Autenticação com Facebook indisponível"
       >
         <span
           aria-hidden="true"

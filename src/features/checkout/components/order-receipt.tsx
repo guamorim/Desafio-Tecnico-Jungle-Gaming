@@ -55,7 +55,7 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
       <div className="space-y-6 p-5 md:p-8">
         {isPending && connectionStatus === "disconnected" && (
           <p role="status" className="rounded-lg border bg-background px-3 py-2 text-xs text-muted-foreground">
-            Tempo real interrompido. O pedido continua sendo consultado pela API até a reconexão.
+            Conexão em tempo real interrompida. O pedido continua sendo consultado pela API até a reconexão.
           </p>
         )}
         <dl className="grid gap-4 text-xs sm:grid-cols-2">

@@ -93,7 +93,7 @@ export function DesktopHeader({
                 type="button"
                 variant="ghost"
                 size="icon"
-                aria-label={`Abrir carrinho com ${cartItemCount} itens`}
+                aria-label={`Abrir carrinho com ${cartItemCount} ${cartItemCount === 1 ? "item" : "itens"}`}
                 onClick={onOpenCart}
               >
                 <ShoppingCart aria-hidden="true" />

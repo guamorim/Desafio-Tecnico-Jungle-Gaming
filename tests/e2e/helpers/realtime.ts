@@ -15,7 +15,7 @@ export const auroraEditionId =
 export async function waitForRealtime(page: Page) {
   await expect(
     page.getByTestId("realtime-connection-status"),
-  ).toHaveText("Tempo real conectado");
+  ).toHaveText("Conexão em tempo real ativa");
 }
 
 export async function updateAuroraInRealtime(

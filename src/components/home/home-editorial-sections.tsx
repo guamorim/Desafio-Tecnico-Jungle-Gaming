@@ -47,7 +47,7 @@ export function HomeEditorialSections() {
       >
         <PromoPanel
           image="/images/nfts/aurora-ape.webp"
-          title="Lançamentos gênesis de edição limitada"
+          title="Lançamentos de edições limitadas"
           description="Colecione edições escassas diretamente dos criadores antes da revelação pública."
         />
         <PromoPanel
@@ -69,7 +69,7 @@ export function HomeEditorialSections() {
             Diário da Cunhagem
           </h2>
           <p className="mt-3 text-sm text-muted-foreground">
-            Histórias, guias e insights para colecionadores sobre o universo da propriedade digital.
+            Histórias, guias e análises para colecionadores sobre o universo da propriedade digital.
           </p>
         </header>
 

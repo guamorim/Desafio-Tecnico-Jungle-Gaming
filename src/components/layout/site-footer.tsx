@@ -8,7 +8,7 @@ const benefits = [
     initial: "W",
     title: "Segurança da carteira",
     description:
-      "Proteja sua carteira e coleção de arte digital verificada com confiança.",
+      "Proteja sua carteira e sua coleção de arte digital com segurança.",
   },
   {
     initial: "C",
@@ -20,7 +20,7 @@ const benefits = [
     initial: "D",
     title: "Alertas de lançamentos",
     description:
-      "Receba calendários de cunhagem, novidades de listas de acesso e análises do mercado.",
+      "Receba calendários de cunhagem, novidades sobre listas de acesso e análises do mercado.",
   },
 ] as const;
 
@@ -138,7 +138,7 @@ export function SiteFooter() {
           >
             KURIO
           </Link>
-          <p>Feito para colecionadores, criadores e cultura</p>
+          <p>Feito para colecionadores e criadores digitais</p>
           <a
             href="mailto:contato@email.com"
             className="outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"

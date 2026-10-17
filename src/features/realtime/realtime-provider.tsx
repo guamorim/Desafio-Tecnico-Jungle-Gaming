@@ -331,10 +331,10 @@ export function RealtimeProvider({
         aria-atomic="true"
       >
         {connectionStatus === "connected"
-          ? "Tempo real conectado"
+          ? "Conexão em tempo real ativa"
           : connectionStatus === "connecting"
-            ? "Conectando ao tempo real"
-            : "Tempo real desconectado"}
+            ? "Conectando ao serviço em tempo real"
+            : "Conexão em tempo real interrompida"}
       </span>
       {children}
     </RealtimeContext.Provider>

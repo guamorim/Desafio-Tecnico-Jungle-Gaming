@@ -483,7 +483,7 @@ export const authHandlers = [
         return HttpResponse.json(
           {
             message:
-              "Informe e-mail e senha válidos.",
+              "Informe um e-mail e uma senha válidos.",
           },
           { status: 400 },
         );

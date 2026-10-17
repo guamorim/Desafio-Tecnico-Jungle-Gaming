@@ -1,6 +1,6 @@
 # Relatório Lighthouse
 
-Gerado em: 2026-10-17T08:10:13.120Z
+Gerado em: 2026-10-17T09:05:29.229Z
 
 Condições: build de produção do Vite, cenário padrão do MSW, três medições por página e perfil. Os valores abaixo são as medianas das três execuções.
 
@@ -8,15 +8,15 @@ Condições: build de produção do Vite, cenário padrão do MSW, três mediç�
 
 | Página | Performance | Accessibility | Best Practices | SEO | LCP | CLS | TBT |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Início | 99 | 100 | 96 | 92 | 909 ms | 0.000 | 0 ms |
-| Detalhe do NFT | 98 | 97 | 96 | 92 | 1027 ms | 0.000 | 0 ms |
+| Início | 98 | 100 | 96 | 92 | 953 ms | 0.000 | 0 ms |
+| Detalhe do NFT | 98 | 97 | 96 | 92 | 1087 ms | 0.000 | 0 ms |
 
 ## Mobile
 
 | Página | Performance | Accessibility | Best Practices | SEO | LCP | CLS | TBT |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Início | 77 | 100 | 96 | 92 | 4225 ms | 0.005 | 97 ms |
-| Detalhe do NFT | 74 | 97 | 96 | 92 | 4927 ms | 0.000 | 73 ms |
+| Início | 77 | 100 | 96 | 92 | 4228 ms | 0.005 | 71 ms |
+| Detalhe do NFT | 74 | 97 | 96 | 92 | 4914 ms | 0.000 | 63 ms |
 
 ## Ambiente
 
@@ -25,7 +25,7 @@ Condições: build de produção do Vite, cenário padrão do MSW, três mediç�
 - Node.js: v24.18.0
 - Sistema: Windows_NT 10.0.26200 (x64)
 - User agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36
-- Benchmark index: 2805
+- Benchmark index: 2362.5
 - URLs: `/` e `/nfts/nft-aurora-ape` em `http://127.0.0.1:4173`
 - Perfis: desktop do Lighthouse e mobile 390 × 844 a 2x
 

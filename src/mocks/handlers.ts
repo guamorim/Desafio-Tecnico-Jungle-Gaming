@@ -250,32 +250,6 @@ function shouldFailFavoriteMutation() {
   );
 }
 
-const recoverableCatalogErrorAttemptsKey =
-  "jungle-nft-marketplace:mock-catalog-recoverable-error-attempts";
-const offlineCatalogErrorAttemptsKey =
-  "jungle-nft-marketplace:mock-catalog-offline-attempts";
-
-function shouldFailCatalogRequest(storageKey: string) {
-  if (typeof localStorage === "undefined") {
-    return true;
-  }
-
-  const currentAttempts = Number(
-    localStorage.getItem(storageKey) ?? "0",
-  );
-
-  if (currentAttempts >= 2) {
-    return false;
-  }
-
-  localStorage.setItem(
-    storageKey,
-    String(currentAttempts + 1),
-  );
-
-  return true;
-}
-
 function withFavoriteState(
   nft: NftSummary,
   userId: string | null,
@@ -845,21 +819,11 @@ export const handlers = [
 
     await delay(catalogDelay);
 
-    if (
-      scenario === "offline" &&
-      shouldFailCatalogRequest(
-        offlineCatalogErrorAttemptsKey,
-      )
-    ) {
+    if (scenario === "offline") {
       return HttpResponse.error();
     }
 
-    if (
-      scenario === "recoverable-error" &&
-      shouldFailCatalogRequest(
-        recoverableCatalogErrorAttemptsKey,
-      )
-    ) {
+    if (scenario === "recoverable-error") {
       return HttpResponse.json(
         {
           message:
@@ -1052,7 +1016,7 @@ export const handlers = [
 
     if (!ownerId) {
       return HttpResponse.json(
-        { message: "Identidade do carrinho ausente." },
+        { message: "Não foi possível identificar o carrinho." },
         { status: 400 },
       );
     }
@@ -1092,7 +1056,7 @@ export const handlers = [
         return HttpResponse.json(
           {
             message:
-              "Identidade do carrinho visitante inválida.",
+              "A identificação do carrinho de visitante é inválida.",
           },
           { status: 400 },
         );
@@ -1155,7 +1119,7 @@ export const handlers = [
 
       if (!ownerId) {
         return HttpResponse.json(
-          { message: "Identidade do carrinho ausente." },
+          { message: "Não foi possível identificar o carrinho." },
           { status: 400 },
         );
       }
@@ -1261,7 +1225,7 @@ export const handlers = [
 
       if (!ownerId) {
         return HttpResponse.json(
-          { message: "Identidade do carrinho ausente." },
+          { message: "Não foi possível identificar o carrinho." },
           { status: 400 },
         );
       }
@@ -1347,7 +1311,7 @@ export const handlers = [
 
       if (!ownerId) {
         return HttpResponse.json(
-          { message: "Identidade do carrinho ausente." },
+          { message: "Não foi possível identificar o carrinho." },
           { status: 400 },
         );
       }
@@ -1392,7 +1356,7 @@ export const handlers = [
 
       if (!ownerId) {
         return HttpResponse.json(
-          { message: "Identidade do carrinho ausente." },
+          { message: "Não foi possível identificar o carrinho." },
           { status: 400 },
         );
       }
@@ -1431,7 +1395,7 @@ export const handlers = [
 
       if (!ownerId) {
         return HttpResponse.json(
-          { message: "Identidade do carrinho ausente." },
+          { message: "Não foi possível identificar o carrinho." },
           { status: 400 },
         );
       }
@@ -1504,7 +1468,7 @@ export const handlers = [
 
       if (!ownerId) {
         return HttpResponse.json(
-          { message: "Identidade do carrinho ausente." },
+          { message: "Não foi possível identificar o carrinho." },
           { status: 400 },
         );
       }
