@@ -11,6 +11,7 @@ import {
   defaultParseSearch,
   defaultStringifySearch,
 } from '@tanstack/react-router'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import spaceMono400Url from '@fontsource/space-mono/files/space-mono-latin-400-normal.woff2?url'
 import spaceMono700Url from '@fontsource/space-mono/files/space-mono-latin-700-normal.woff2?url'
 import './index.css'
@@ -202,6 +203,7 @@ async function bootstrap() {
         {import.meta.env.DEV && (
           <ReactQueryDevtools initialIsOpen={false} />
         )}
+        <SpeedInsights />
       </QueryClientProvider>
     </StrictMode>
   )
